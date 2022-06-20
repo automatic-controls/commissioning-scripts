@@ -13,4 +13,11 @@ public class TestingUnit {
   public int getGroup(){
     return groupID;
   }
+  public void serialize(ByteBuilder b){
+    b.write(ID);
+    b.write(groupID);
+  }
+  public static TestingUnit deserialize(SerializationStream s){
+    return new TestingUnit(s.readString(),s.readInt());
+  }
 }

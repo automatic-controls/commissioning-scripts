@@ -12,26 +12,30 @@ public class Test {
   private final static AtomicInteger nextID = new AtomicInteger();
   public final int ID = nextID.getAndIncrement();
   private volatile String name;
+  private volatile String description;
   private volatile Path scriptFile;
   private final AtomicBoolean running = new AtomicBoolean();
   public volatile String status;
   private volatile boolean kill = false;
   private volatile Thread[] threads = null;
-
-
   private volatile TreeSet<String> requiredTags = new TreeSet<String>();
   private volatile String outputPrefix = null;
   private volatile StringBuilder outputBody = new StringBuilder();
   private volatile String outputSuffix = null;
-
-
   /**
    * Construct a new test using the given parameters.
    */
-  public Test(String name, Path scriptFile){
+  public Test(Path scriptFile){
     clearStatus();
-    this.name = name;
     this.scriptFile = scriptFile;
+    this.name = scriptFile.getFileName().toString();
+    try{
+      Script s = getScript();
+      description = s==null?"Could not locate implementation of "+Script.class.getName():s.getDescription();
+    }catch(Throwable t){
+      Initializer.log(t);
+      description = "Failed to compile script.";
+    }
     instances.put(ID,this);
   }
   /**
@@ -91,6 +95,14 @@ public class Test {
     return sb.toString();
   }
   /**
+   * Erases the output body (does not include the prefix or suffix).
+   */
+  public void clearOutputBody(){
+    synchronized (outputBody){
+      outputBody.setLength(0);
+    }
+  }
+  /**
    * Resets the status message of this test.
    */
   public void clearStatus(){
@@ -99,7 +111,7 @@ public class Test {
   /**
    * @return the path to this script file.
    */
-  public Path getScript(){
+  public Path getScriptFile(){
     return scriptFile;
   }
   /**
@@ -115,10 +127,10 @@ public class Test {
     return name;
   }
   /**
-   * Sets the name of this test.
+   * @return a descriptive detail for this test.
    */
-  public void setName(String name){
-    this.name = name;
+  public String getDescription(){
+    return description;
   }
   /**
    * Attempts to kill any currently executing test.
@@ -155,9 +167,12 @@ public class Test {
    * Attempts to initiate a new test.
    * @return whether test initiation was successful.
    */
-  public boolean initiate(Mapping m, int threadCount, double maxTests){
+  public boolean initiate(Mapping m, int threadCount, double maxTests, String operator){
     if (!Initializer.isDying() && running.compareAndSet(false,true)){
+      final long startTime = System.currentTimeMillis();
       boolean ret = true;
+      boolean invokeTerminate = false;
+      final Container<Script> script = new Container<Script>();
       init:{
         try{
           kill = false;
@@ -179,32 +194,29 @@ public class Test {
             ret = false;
             break init;
           }
-          final Container<Script> script = new Container<Script>();
-          {
-            final SimpleCompiler sc = new SimpleCompiler();
-            final String name = scriptFile.getFileName().toString();
-            try(
-              FileReader r = new FileReader(scriptFile.toFile());
-              BufferedReader rr = new BufferedReader(r);
-            ){
-              sc.cook(name,rr);
-            }
-            sc.getClassLoader().loadClass("").as
+          script.x = getScript();
+          if (script.x==null){
+            status = "Could not locate implementation of "+Script.class.getName();
+            ret = false;
+            break init;
           }
+          description = script.x.getDescription();
           requiredTags.clear();
           outputPrefix = null;
           outputSuffix = null;
-          outputBody.setLength(0);
+          clearOutputBody();
           if (kill){
             clearStatus();
             ret = false;
             break init;
           }
+          script.x.test = this;
           try{
-            script.x.run(null,this);
-          }catch(NullPointerException e){
+            script.x.init();
+            invokeTerminate = true;
+          }catch(Throwable t){
             status = "Initialization error occurred: See log file for details";
-            Initializer.log(e);
+            Initializer.log(t);
             ret = false;
             break init;
           }
@@ -245,8 +257,9 @@ public class Test {
           final GroupTracker[] groups = (GroupTracker[])groupMap.values().toArray();
           groupMap = null;
           int threadLimit = 0;
+          final double mtest = maxTests;
           for (int i=0;i<groups.length;++i){
-            groups[i].init(maxTests);
+            groups[i].init(mtest);
             threadLimit+=groups[i].getMaxRunning();
           }
           threadCount = Math.min(threadCount, threadLimit);
@@ -254,7 +267,6 @@ public class Test {
           final AtomicInteger numStarted = new AtomicInteger();
           final AtomicInteger numCompleted = new AtomicInteger();
           final AtomicInteger stopped = new AtomicInteger();
-          final Test ref = this;
           final AtomicInteger groupIndex = new AtomicInteger();
           final IntUnaryOperator groupCycle = new IntUnaryOperator(){
             public int applyAsInt(int x){
@@ -313,12 +325,18 @@ public class Test {
                         //Should never occur
                         throw new Exception("Fatal flaw detected in logic.");
                       }else{
+                        boolean autoReset = true;
                         try{
-                          script.x.run(rtu,ref);
+                          script.x.exec(rtu);
+                          autoReset = script.x.autoReset();
                         }catch(InterruptedException e){}catch(Throwable t){
                           Initializer.log(t);
                         }
+                        if (autoReset){
+                          rtu.reset(null);
+                        }
                         rtu.complete();
+                        groups[i].complete();
                         status = String.valueOf(100*numCompleted.incrementAndGet()/total)+'%';
                       }
                     }
@@ -326,7 +344,16 @@ public class Test {
                     Initializer.log(t);
                   }
                   if (stopped.incrementAndGet()>=threads.length){
-                    clearStatus();
+                    try{
+                      script.x.exit();
+                      clearStatus();
+                    }catch(InterruptedException e){}catch(Throwable t){
+                      Initializer.log(t);
+                      status = "Termination error occurred: See log file for details";
+                    }
+                    ArchivedTest at = new ArchivedTest(name, operator, startTime, System.currentTimeMillis(), threads.length, mtest);
+                    threads = null;
+                    at.save(getOutput());
                     running.set(false);
                   }
                 }
@@ -351,10 +378,34 @@ public class Test {
         }
       }
       if (!ret){
+        if (invokeTerminate){
+          try{
+            script.x.exit();
+          }catch(InterruptedException e){}catch(Throwable t){
+            Initializer.log(t);
+          }
+        }
         running.set(false);
       }
       return ret;
     }
     return false;
+  }
+  private Script getScript() throws Throwable {
+    final SimpleCompiler sc = new SimpleCompiler();
+    try(
+      FileReader r = new FileReader(scriptFile.toFile());
+      BufferedReader rr = new BufferedReader(r);
+    ){
+      sc.cook(name,rr);
+    }
+    ClassLoader cl = sc.getClassLoader();
+    org.codehaus.janino.util.ClassFile[] cfs = sc.getClassFiles();
+    for (int i=0;i<cfs.length;++i){
+      try{
+        return cl.loadClass(cfs[i].getThisClassName()).asSubclass(Script.class).getDeclaredConstructor().newInstance();
+      }catch(Throwable t){}
+    }
+    return null;
   }
 }

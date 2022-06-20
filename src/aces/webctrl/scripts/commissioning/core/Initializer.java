@@ -4,6 +4,7 @@ import com.controlj.green.addonsupport.access.*;
 import javax.servlet.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.nio.file.*;
 public class Initializer implements ServletContextListener {
   /** Contains basic informatin about this addon. */
   public volatile static AddOnInfo info = null;
@@ -13,6 +14,10 @@ public class Initializer implements ServletContextListener {
   private volatile static String prefix;
   /** Used for logging status messages. */
   private volatile static FileLogger logger;
+  /** Path to the private data folder for this addon. */
+  private volatile static Path data;
+  /** Path to the folder containing scripts. */
+  private volatile static Path scriptFolder;
   /** Root system connection to the database. */
   private volatile static SystemConnection con;
   /** Queue for code that must be executed within a write action (with field access) */
@@ -45,6 +50,39 @@ public class Initializer implements ServletContextListener {
     prefix = '/'+name+'/';
     logger = info.getDateStampLogger();
     con = DirectAccess.getDirectAccess().getRootSystemConnection();
+    data = info.getPrivateDir().toPath();
+    ArchivedTest.dataFolder = data.resolve("test_archive");
+    ArchivedTest.mainDataFile = data.resolve("archive_index");
+    Mapping.dataFile = data.resolve("mappings");
+    scriptFolder = data.resolve("scripts");
+    try{
+      if (!Files.exists(ArchivedTest.dataFolder)){
+        Files.createDirectory(ArchivedTest.dataFolder);
+      }
+    }catch(Throwable t){
+      log(t);
+    }
+    try{
+      if (!Files.exists(scriptFolder)){
+        Files.createDirectory(scriptFolder);
+      }
+    }catch(Throwable t){
+      log(t);
+    }
+    ArchivedTest.loadAll();
+    Mapping.loadAll();
+    try{
+      Files.walkFileTree(scriptFolder, new SimpleFileVisitor<Path>(){
+        @Override public FileVisitResult visitFile(Path file, java.nio.file.attribute.BasicFileAttributes attrs) throws java.io.IOException {
+          Objects.requireNonNull(file);
+          Objects.requireNonNull(attrs);
+          new Test(file);
+          return FileVisitResult.CONTINUE;
+        }
+      });
+    }catch(Throwable t){
+      log(t);
+    }
     dataQueryThread = new Thread(){
       public void run(){
         try{
@@ -143,6 +181,8 @@ public class Initializer implements ServletContextListener {
       for (Test t:tests){
         t.waitForDeath();
       }
+      ArchivedTest.saveAll();
+      Mapping.saveAll();
     }catch(Throwable t){
       log(t);
     }
@@ -164,6 +204,12 @@ public class Initializer implements ServletContextListener {
       readQueries.add(r);
       queryNotifier.notifyAll();
     }
+  }
+  /**
+   * @return the directory where data should be saved.
+   */
+  public static Path getDataFolder(){
+    return data;
   }
   /**
    * @return the root system connection used by this application.

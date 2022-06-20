@@ -9,6 +9,13 @@ public class SemanticTag {
   private volatile String expr;
   private volatile String tag;
   private volatile Pattern pattern = null;
+  public void serialize(ByteBuilder b){
+    b.write(tag);
+    b.write(expr);
+  }
+  public static SemanticTag deserialize(SerializationStream s) throws PatternSyntaxException {
+    return new SemanticTag(s.readString(), s.readString());
+  }
   /**
    * Constructs a new semantic tag with the given name and expression.
    */

@@ -5,7 +5,11 @@ import java.util.regex.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.io.*;
+import java.nio.*;
+import java.nio.file.*;
+import java.nio.channels.*;
 public class Mapping {
+  public volatile static Path dataFile;
   private final static Pattern newline = Pattern.compile("\\n");
   private final static AtomicInteger nextID = new AtomicInteger();
   public final static ConcurrentSkipListMap<Integer,Mapping> instances = new ConcurrentSkipListMap<Integer,Mapping>();
@@ -22,6 +26,92 @@ public class Mapping {
    * A name for this grouping.
    */
   private volatile String name;
+  public synchronized static boolean saveAll(){
+    ByteBuffer buf = ByteBuffer.wrap(serializeAll());
+    try(
+      FileChannel out = FileChannel.open(dataFile, StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+    ){
+      while (buf.hasRemaining()){
+        out.write(buf);
+      }
+      return true;
+    }catch(Throwable t){
+      Initializer.log(t);
+      return false;
+    }
+  }
+  public synchronized static boolean loadAll(){
+    try{
+      if (Files.exists(dataFile)){
+        deserializeAll(new SerializationStream(Files.readAllBytes(dataFile)));
+      }
+      return true;
+    }catch(Throwable t){
+      Initializer.log(t);
+      return false;
+    }
+  }
+  /**
+   * Serializes all mappings.
+   */
+  public static byte[] serializeAll(){
+    Collection<Mapping> instances = Mapping.instances.clone().values();
+    ByteBuilder b = new ByteBuilder(instances.size()<<7);
+    for (Mapping m:instances){
+      m.serialize(b);
+    }
+    return b.compute();
+  }
+  /**
+   * Deserializes all mappings.
+   */
+  public static void deserializeAll(SerializationStream s){
+    while (!s.end()){
+      deserialize(s);
+    }
+  }
+  /**
+   * Serializes a single mapping.
+   */
+  public void serialize(ByteBuilder b){
+    b.write(name);
+    {
+      Collection<SemanticTag> tags = this.tags.clone().values();
+      b.write(tags.size());
+      for (SemanticTag st:tags){
+        st.serialize(b);
+      }
+    }
+    {
+      Collection<TestingUnit> equipment = this.equipment.clone().values();
+      b.write(equipment.size());
+      for (TestingUnit tu:equipment){
+        tu.serialize(b);
+      }
+    }
+  }
+  /**
+   * Deserializes a single mapping.
+   */
+  public static Mapping deserialize(SerializationStream s){
+    Mapping m = new Mapping(s.readString());
+    int i;
+    SemanticTag st;
+    int len = s.readInt();
+    for (i=0;i<len;++i){
+      try{
+        st = SemanticTag.deserialize(s);
+        m.tags.put(st.getTag(),st);
+      }catch(PatternSyntaxException e){}
+    }
+    TestingUnit tu;
+    len = s.readInt();
+    for (i=0;i<len;++i){
+      tu = TestingUnit.deserialize(s);
+      m.equipment.put(tu.getID(),tu);
+    }
+    return m;
+  }
   /**
    * Constructs a new mapping.
    */
