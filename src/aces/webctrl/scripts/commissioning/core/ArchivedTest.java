@@ -2,7 +2,6 @@ package aces.webctrl.scripts.commissioning.core;
 import java.nio.*;
 import java.nio.file.*;
 import java.nio.channels.*;
-import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 public class ArchivedTest {
@@ -44,9 +43,8 @@ public class ArchivedTest {
     }
   }
   public static byte[] serializeAll(){
-    Collection<ArchivedTest> instances = ArchivedTest.instances.clone().values();
     ByteBuilder b = new ByteBuilder(instances.size()<<3);
-    for (ArchivedTest at:instances){
+    for (ArchivedTest at:instances.values()){
       at.serialize(b);
     }
     return b.compute();

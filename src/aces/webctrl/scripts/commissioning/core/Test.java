@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.*;
 import java.util.function.IntUnaryOperator;
 import java.nio.file.*;
 import java.io.*;
+import java.security.*;
 public class Test {
   public final static ConcurrentSkipListMap<Integer,Test> instances = new ConcurrentSkipListMap<Integer,Test>();
   private final static AtomicInteger nextID = new AtomicInteger();
@@ -19,9 +20,9 @@ public class Test {
   private volatile boolean kill = false;
   private volatile Thread[] threads = null;
   private volatile TreeSet<String> requiredTags = new TreeSet<String>();
-  private volatile String outputPrefix = null;
-  private volatile StringBuilder outputBody = new StringBuilder();
-  private volatile String outputSuffix = null;
+  private volatile Script script = null;
+  private volatile String cachedOutput = null;
+  private volatile int hash = 0;
   /**
    * Construct a new test using the given parameters.
    */
@@ -38,6 +39,9 @@ public class Test {
     }
     instances.put(ID,this);
   }
+  @Override public int hashCode(){
+    return hash;
+  }
   /**
    * Require a new semantic tag for mappings.
    * Intended to be invoked by scripts.
@@ -46,61 +50,12 @@ public class Test {
     requiredTags.add(tag);
   }
   /**
-   * Appends some text to the output string.
-   * Intended to be invoked by scripts.
-   */
-  public void appendOutput(CharSequence seq){
-    synchronized (outputBody){
-      outputBody.append(seq);
-    }
-  }
-  /**
-   * Set the output prefix.
-   * Intended to be invoked by scripts.
-   */
-  public void setOutputPrefix(String str){
-    outputPrefix = str;
-  }
-  /**
-   * Set the output suffix.
-   * Intended to be invoked by scripts.
-   */
-  public void setOutputSuffix(String str){
-    outputSuffix = str;
-  }
-  /**
-   * @return the output of the test.
+   * @return the output of the test, or {@code null} if there is no output.
    */
   public String getOutput(){
-    final String pre = outputPrefix;
-    final String suf = outputSuffix;
-    int len = 0;
-    if (pre!=null){
-      len+=pre.length();
-    }
-    if (suf!=null){
-      len+=suf.length();
-    }
-    StringBuilder sb;
-    synchronized (outputBody){
-      sb = new StringBuilder(len+outputBody.length());
-      if (pre!=null){
-        sb.append(pre);
-      }
-      sb.append(outputBody);
-    }
-    if (suf!=null){
-      sb.append(suf);
-    }
-    return sb.toString();
-  }
-  /**
-   * Erases the output body (does not include the prefix or suffix).
-   */
-  public void clearOutputBody(){
-    synchronized (outputBody){
-      outputBody.setLength(0);
-    }
+    final String cachedOutput = this.cachedOutput;
+    final Script script = this.script;
+    return cachedOutput==null?(script==null?null:script.getOutput()):cachedOutput;
   }
   /**
    * Resets the status message of this test.
@@ -165,28 +120,32 @@ public class Test {
   }
   /**
    * Attempts to initiate a new test.
+   * @param m specifies semantic tag mappings and equipment groups to use for this test.
+   * @param threadCount is the maximum number of threads to activate for this test.
+   * @param maxTests is the maximum percentage of program within each group that can be tested concurrently.
+   * @param operator specifies the operator who initiated the test (for record keeping purposes).
+   * @param schedule provided for hash validation and test completion callback. {@code null} values are acceptable.
    * @return whether test initiation was successful.
    */
-  public boolean initiate(Mapping m, int threadCount, double maxTests, String operator){
+  public boolean initiate(Mapping m, int threadCount, double maxTests, String operator, ScheduledTest schedule){
     if (!Initializer.isDying() && running.compareAndSet(false,true)){
       final long startTime = System.currentTimeMillis();
       boolean ret = true;
       boolean invokeTerminate = false;
-      final Container<Script> script = new Container<Script>();
+      script = null;
+      cachedOutput = null;
       init:{
         try{
           kill = false;
           status = "Initiating";
           if (threadCount<1){
             threadCount = 1;
-          }
-          if (threadCount>64){
+          }else if (threadCount>64){
             threadCount = 64;
           }
           if (maxTests<0){
             maxTests = 0;
-          }
-          if (maxTests>1){
+          }else if (maxTests>1){
             maxTests = 1;
           }
           if (!Files.exists(scriptFile)){
@@ -194,28 +153,39 @@ public class Test {
             ret = false;
             break init;
           }
-          script.x = getScript();
-          if (script.x==null){
-            status = "Could not locate implementation of "+Script.class.getName();
+          script = getScript();
+          if (script==null){
+            status = "Initialization error: Could not locate implementation of "+Script.class.getName();
             ret = false;
             break init;
           }
-          description = script.x.getDescription();
+          description = script.getDescription();
           requiredTags.clear();
-          outputPrefix = null;
-          outputSuffix = null;
-          clearOutputBody();
           if (kill){
             clearStatus();
             ret = false;
             break init;
           }
-          script.x.test = this;
+          script.test = this;
+          if (schedule!=null){
+            if (schedule.getScriptHash()!=hash){
+              status = "Initialization error: Script hash does not match expected value.";
+              ret = false;
+              break init;
+            }
+            if (schedule.getMappingHash()!=m.hashCode()){
+              status = "Initialization error: Mapping hash does not match expected value.";
+              ret = false;
+              break init;
+            }
+          }
+          final Container<Boolean> autoReset = new Container<Boolean>(true);
           try{
-            script.x.init();
+            script.init();
             invokeTerminate = true;
+            autoReset.x = script.autoReset();
           }catch(Throwable t){
-            status = "Initialization error occurred: See log file for details";
+            status = "Initialization error: See log file for details";
             Initializer.log(t);
             ret = false;
             break init;
@@ -323,16 +293,14 @@ public class Test {
                       }
                       if (rtu==null){
                         //Should never occur
-                        throw new Exception("Fatal flaw detected in logic.");
+                        throw new NullPointerException("Fatal flaw detected in logic.");
                       }else{
-                        boolean autoReset = true;
                         try{
-                          script.x.exec(rtu);
-                          autoReset = script.x.autoReset();
+                          script.exec(rtu);
                         }catch(InterruptedException e){}catch(Throwable t){
                           Initializer.log(t);
                         }
-                        if (autoReset){
+                        if (autoReset.x){
                           rtu.reset(null);
                         }
                         rtu.complete();
@@ -345,15 +313,22 @@ public class Test {
                   }
                   if (stopped.incrementAndGet()>=threads.length){
                     try{
-                      script.x.exit();
+                      script.exit();
                       clearStatus();
                     }catch(InterruptedException e){}catch(Throwable t){
                       Initializer.log(t);
                       status = "Termination error occurred: See log file for details";
                     }
-                    ArchivedTest at = new ArchivedTest(name, operator, startTime, System.currentTimeMillis(), threads.length, mtest);
+                    cachedOutput = script.getOutput();
+                    script = null;
                     threads = null;
-                    at.save(getOutput());
+                    final ArchivedTest at = new ArchivedTest(name, operator, startTime, System.currentTimeMillis(), threads.length, mtest);
+                    if (cachedOutput!=null){
+                      at.save(cachedOutput);
+                      if (schedule!=null){
+                        schedule.onComplete(cachedOutput);
+                      }
+                    }
                     running.set(false);
                   }
                 }
@@ -380,10 +355,12 @@ public class Test {
       if (!ret){
         if (invokeTerminate){
           try{
-            script.x.exit();
+            script.exit();
+            cachedOutput = script.getOutput();
           }catch(InterruptedException e){}catch(Throwable t){
             Initializer.log(t);
           }
+          script = null;
         }
         running.set(false);
       }
@@ -391,14 +368,15 @@ public class Test {
     }
     return false;
   }
-  private Script getScript() throws Throwable {
+  public Script getScript() throws Throwable {
     final SimpleCompiler sc = new SimpleCompiler();
+    final MessageDigest md = MessageDigest.getInstance("MD5");
     try(
-      FileReader r = new FileReader(scriptFile.toFile());
-      BufferedReader rr = new BufferedReader(r);
+      BufferedReader r = new BufferedReader(new InputStreamReader(new DigestInputStream(new FileInputStream(scriptFile.toFile()), md), java.nio.charset.StandardCharsets.UTF_8));
     ){
-      sc.cook(name,rr);
+      sc.cook(name,r);
     }
+    hash = Arrays.hashCode(md.digest());
     ClassLoader cl = sc.getClassLoader();
     org.codehaus.janino.util.ClassFile[] cfs = sc.getClassFiles();
     for (int i=0;i<cfs.length;++i){

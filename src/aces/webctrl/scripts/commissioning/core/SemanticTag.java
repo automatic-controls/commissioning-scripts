@@ -83,4 +83,7 @@ public class SemanticTag {
     }
     return null;
   }
+  @Override public int hashCode(){
+    return expr.hashCode()^tag.hashCode();
+  }
 }

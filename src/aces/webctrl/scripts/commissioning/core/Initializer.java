@@ -5,7 +5,10 @@ import javax.servlet.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.nio.file.*;
+import java.time.format.*;
+import java.time.*;
 public class Initializer implements ServletContextListener {
+  public final static DateTimeFormatter format = DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss").withZone(ZoneId.systemDefault());
   /** Contains basic informatin about this addon. */
   public volatile static AddOnInfo info = null;
   /** The name of this addon */
@@ -54,6 +57,7 @@ public class Initializer implements ServletContextListener {
     ArchivedTest.dataFolder = data.resolve("test_archive");
     ArchivedTest.mainDataFile = data.resolve("archive_index");
     Mapping.dataFile = data.resolve("mappings");
+    ScheduledTest.dataFile = data.resolve("schedules");
     scriptFolder = data.resolve("scripts");
     try{
       if (!Files.exists(ArchivedTest.dataFolder)){
@@ -71,6 +75,7 @@ public class Initializer implements ServletContextListener {
     }
     ArchivedTest.loadAll();
     Mapping.loadAll();
+    ScheduledTest.loadAll();
     try{
       Files.walkFileTree(scriptFolder, new SimpleFileVisitor<Path>(){
         @Override public FileVisitResult visitFile(Path file, java.nio.file.attribute.BasicFileAttributes attrs) throws java.io.IOException {
@@ -88,13 +93,18 @@ public class Initializer implements ServletContextListener {
         try{
           final FieldAccess fieldAccess = FieldAccessFactory.newFieldAccess();
           final Container<InterruptedException> interrupt = new Container<InterruptedException>();
+          long nextCheck = 0, time;
           while (true){
             if (kill){ return; }
             synchronized (queryNotifier){
-              while (writeQueries.isEmpty() && readQueries.isEmpty()){
+              while (nextCheck>(time = System.currentTimeMillis()) && writeQueries.isEmpty() && readQueries.isEmpty()){
                 queryNotifier.wait(1000);
                 if (kill){ return; }
               }
+            }
+            if (nextCheck<=time){
+              ScheduledTest.execAll();
+              nextCheck = System.currentTimeMillis()+60000L;
             }
             while (!readQueries.isEmpty()){
               con.runReadAction(fieldAccess, new ReadAction(){
@@ -183,6 +193,7 @@ public class Initializer implements ServletContextListener {
       }
       ArchivedTest.saveAll();
       Mapping.saveAll();
+      ScheduledTest.saveAll();
     }catch(Throwable t){
       log(t);
     }
@@ -204,6 +215,12 @@ public class Initializer implements ServletContextListener {
       readQueries.add(r);
       queryNotifier.notifyAll();
     }
+  }
+  /**
+   * @return the directory where scripts are stored.
+   */
+  public static Path getScriptFolder(){
+    return scriptFolder;
   }
   /**
    * @return the directory where data should be saved.

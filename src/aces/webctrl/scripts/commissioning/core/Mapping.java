@@ -26,6 +26,20 @@ public class Mapping {
    * A name for this grouping.
    */
   private volatile String name;
+  @Override public int hashCode(){
+    Container<Integer> hash = new Container<Integer>(name.hashCode());
+    tags.forEach(new java.util.function.BiConsumer<String,SemanticTag>(){
+      public void accept(String str, SemanticTag tag){
+        hash.x = hash.x*31+tag.hashCode();
+      }
+    });
+    equipment.forEach(new java.util.function.BiConsumer<String,TestingUnit>(){
+      public void accept(String str, TestingUnit tu){
+        hash.x = hash.x*31+tu.hashCode();
+      }
+    });
+    return hash.x;
+  }
   public synchronized static boolean saveAll(){
     ByteBuffer buf = ByteBuffer.wrap(serializeAll());
     try(
@@ -55,9 +69,8 @@ public class Mapping {
    * Serializes all mappings.
    */
   public static byte[] serializeAll(){
-    Collection<Mapping> instances = Mapping.instances.clone().values();
     ByteBuilder b = new ByteBuilder(instances.size()<<7);
-    for (Mapping m:instances){
+    for (Mapping m:instances.values()){
       m.serialize(b);
     }
     return b.compute();
@@ -149,9 +162,18 @@ public class Mapping {
   }
   /**
    * Sets the name of this mapping.
+   * Two mappings cannot share the same name.
+   * @return whether the operation is successful.
    */
-  public void setName(String name){
+  public boolean setName(String name){
+    if (name==null){ return false; }
+    for (Mapping m:instances.values()){
+      if (m!=this && m.getName().equals(name)){
+        return false;
+      }
+    }
     this.name = name;
+    return true;
   }
   /**
    * Exports all semantic tag data to the given StringBuilder.

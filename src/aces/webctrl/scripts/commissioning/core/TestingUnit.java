@@ -20,4 +20,7 @@ public class TestingUnit {
   public static TestingUnit deserialize(SerializationStream s){
     return new TestingUnit(s.readString(),s.readInt());
   }
+  @Override public int hashCode(){
+    return groupID+31*ID.hashCode();
+  }
 }
