@@ -7,7 +7,13 @@ package aces.webctrl.scripts.commissioning.core;
 import java.io.*;
 import java.util.*;
 import java.util.regex.*;
+import java.time.*;
+import java.time.format.*;
 public class Utility {
+  /**
+   * Used to convert between time variables and user-friendly strings.
+   */
+  public final static DateTimeFormatter format = DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss").withZone(ZoneId.systemDefault());
   /**
    * A regular expression to match vertical space characters.
    */
@@ -16,6 +22,21 @@ public class Utility {
    * The system default line terminator.
    */
   public final static String NEW_LINE = System.lineSeparator();
+  /**
+   * @param time should be some value returned by {@code System.currentTimeMillis()}.
+   * @return a formatted {@code String} representing the given time.
+   */
+  public static String getDateString(long time){
+    return format.format(Instant.ofEpochMilli(time));
+  }
+  /**
+   * @return a {@code String} containing the stack trace of the given {@code Throwable}.
+   */
+  public static String getStackTrace(Throwable t){
+    StringWriter sw = new StringWriter(128);
+    t.printStackTrace(new PrintWriter(sw));
+    return sw.toString();
+  }
   /**
    * This method is provided for compatibility with older JRE versions.
    * Newer JREs already have a built-in equivalent of this method: {@code InputStream.readAllBytes()}.

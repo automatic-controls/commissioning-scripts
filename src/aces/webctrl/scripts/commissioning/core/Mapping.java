@@ -130,6 +130,7 @@ public class Mapping {
    */
   public Mapping(String name){
     instances.put(ID,this);
+    setName(name);
   }
   /**
    * This method should be invoked within a database read action that has disabled field access.
@@ -163,17 +164,28 @@ public class Mapping {
   /**
    * Sets the name of this mapping.
    * Two mappings cannot share the same name.
-   * @return whether the operation is successful.
+   * In the case of duplicates, a suffix _# is appended.
+   * @return the new name for this mapping.
    */
-  public boolean setName(String name){
-    if (name==null){ return false; }
-    for (Mapping m:instances.values()){
-      if (m!=this && m.getName().equals(name)){
-        return false;
+  public String setName(final String name){
+    if (name==null){ return this.name; }
+    int suffix = 1;
+    String tryName = name;
+    boolean found;
+    while (true){
+      found = true;
+      for (Mapping m:instances.values()){
+        if (m!=this && m.getName().equals(tryName)){
+          found = false;
+          break;
+        }
       }
+      if (found){
+        this.name = tryName;
+        return this.name;
+      }
+      tryName = name+'_'+(++suffix);
     }
-    this.name = name;
-    return true;
   }
   /**
    * Exports all semantic tag data to the given StringBuilder.

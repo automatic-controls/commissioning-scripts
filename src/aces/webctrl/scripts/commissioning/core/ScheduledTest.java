@@ -194,7 +194,7 @@ public class ScheduledTest {
    */
   public String getNextString(){
     long nextRunTime = this.nextRunTime;
-    return nextRunTime==-1?"None":Initializer.format.format(java.time.Instant.ofEpochMilli(nextRunTime));
+    return nextRunTime==-1?"None":Utility.getDateString(nextRunTime);
   }
   /**
    * @return the relative script path from the root script folder.

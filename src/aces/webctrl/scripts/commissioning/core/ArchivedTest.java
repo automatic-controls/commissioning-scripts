@@ -17,6 +17,24 @@ public class ArchivedTest {
   private volatile long endTime;
   private volatile int threads;
   private volatile double maxTests;
+  public String getScriptName(){
+    return scriptName;
+  }
+  public String getOperator(){
+    return operator;
+  }
+  public long getStart(){
+    return startTime;
+  }
+  public long getEnd(){
+    return endTime;
+  }
+  public int getThreads(){
+    return threads;
+  }
+  public double getMaxTests(){
+    return maxTests;
+  }
   public synchronized static boolean saveAll(){
     ByteBuffer buf = ByteBuffer.wrap(serializeAll());
     try(

@@ -5,10 +5,7 @@ import javax.servlet.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.nio.file.*;
-import java.time.format.*;
-import java.time.*;
 public class Initializer implements ServletContextListener {
-  public final static DateTimeFormatter format = DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss").withZone(ZoneId.systemDefault());
   /** Contains basic informatin about this addon. */
   public volatile static AddOnInfo info = null;
   /** The name of this addon */

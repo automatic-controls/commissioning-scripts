@@ -19,7 +19,6 @@ public class Test {
   public volatile String status;
   private volatile boolean kill = false;
   private volatile Thread[] threads = null;
-  private volatile TreeSet<String> requiredTags = new TreeSet<String>();
   private volatile Script script = null;
   private volatile String cachedOutput = null;
   private volatile int hash = 0;
@@ -30,32 +29,39 @@ public class Test {
     clearStatus();
     this.scriptFile = scriptFile;
     this.name = scriptFile.getFileName().toString();
-    try{
-      Script s = getScript();
-      description = s==null?"Could not locate implementation of "+Script.class.getName():s.getDescription();
-    }catch(Throwable t){
-      Initializer.log(t);
-      description = "Failed to compile script.";
-    }
+    refreshDescription();
     instances.put(ID,this);
   }
   @Override public int hashCode(){
     return hash;
   }
-  /**
-   * Require a new semantic tag for mappings.
-   * Intended to be invoked by scripts.
-   */
-  public void addRequiredTag(String tag){
-    requiredTags.add(tag);
+  public void delete(){
+    instances.remove(ID);
+    kill();
+    try{
+      Files.deleteIfExists(scriptFile);
+    }catch(Throwable t){
+      Initializer.log(t);
+    }
   }
   /**
    * @return the output of the test, or {@code null} if there is no output.
    */
   public String getOutput(){
     final String cachedOutput = this.cachedOutput;
-    final Script script = this.script;
-    return cachedOutput==null?(script==null?null:script.getOutput()):cachedOutput;
+    return cachedOutput==null?getScriptOutputSafe():cachedOutput;
+  }
+  private String getScriptOutputSafe(){
+    final Script scr = script;
+    if (scr==null){
+      return null;
+    }
+    try{
+      return scr.getOutput();
+    }catch(Throwable t){
+      Initializer.log(t);
+      return Utility.getStackTrace(t);
+    }
   }
   /**
    * Resets the status message of this test.
@@ -85,7 +91,20 @@ public class Test {
    * @return a descriptive detail for this test.
    */
   public String getDescription(){
-    return description;
+    final String str = description;
+    return str==null?"No description given.":str;
+  }
+  /**
+   * Reloads the description for this script.
+   */
+  public void refreshDescription(){
+    try{
+      Script s = getScript();
+      description = s==null?"Could not locate implementation of "+Script.class.getName():s.getDescription();
+    }catch(Throwable t){
+      Initializer.log(t);
+      description = "Failed to compile script.";
+    }
   }
   /**
    * Attempts to kill any currently executing test.
@@ -159,14 +178,13 @@ public class Test {
             ret = false;
             break init;
           }
+          script.test = this;
           description = script.getDescription();
-          requiredTags.clear();
           if (kill){
             clearStatus();
             ret = false;
             break init;
           }
-          script.test = this;
           if (schedule!=null){
             if (schedule.getScriptHash()!=hash){
               status = "Initialization error: Script hash does not match expected value.";
@@ -180,27 +198,22 @@ public class Test {
             }
           }
           final Container<Boolean> autoReset = new Container<Boolean>(true);
-          try{
-            script.init();
-            invokeTerminate = true;
-            autoReset.x = script.autoReset();
-          }catch(Throwable t){
-            status = "Initialization error: See log file for details";
-            Initializer.log(t);
-            ret = false;
-            break init;
-          }
-          if (kill){
-            clearStatus();
-            ret = false;
-            break init;
-          }
           final Container<ConcurrentSkipListMap<String,ResolvedTestingUnit>> units = new Container<ConcurrentSkipListMap<String,ResolvedTestingUnit>>();
-          Initializer.getConnection().runReadAction(FieldAccessFactory.newDisabledFieldAccess(), new ReadAction(){
-            public void execute(SystemAccess sys){
-              units.x = m.resolve(sys.getTree(SystemTree.Geographic), requiredTags);
+          {
+            final TreeSet<String> requiredTags = new TreeSet<String>();
+            autoReset.x = script.autoReset();
+            script.requireTags(requiredTags);
+            if (kill){
+              clearStatus();
+              ret = false;
+              break init;
             }
-          });
+            Initializer.getConnection().runReadAction(FieldAccessFactory.newDisabledFieldAccess(), new ReadAction(){
+              public void execute(SystemAccess sys){
+                units.x = m.resolve(sys.getTree(SystemTree.Geographic), requiredTags);
+              }
+            });
+          }
           if (units.x==null){
             status = "No testing units could be resolved.";
             ret = false;
@@ -247,6 +260,14 @@ public class Test {
               return x;
             }
           };
+          script.units = rtus;
+          script.threads = threadCount;
+          script.maxTestsPerGroup = mtest;
+          script.testsTotal = total;
+          script.testsStarted = numStarted;
+          script.testsCompleted = numCompleted;
+          script.init();
+          invokeTerminate = true;
           synchronized (this){
             if (kill){
               clearStatus();
@@ -319,7 +340,7 @@ public class Test {
                       Initializer.log(t);
                       status = "Termination error occurred: See log file for details";
                     }
-                    cachedOutput = script.getOutput();
+                    cachedOutput = getScriptOutputSafe();
                     script = null;
                     threads = null;
                     final ArchivedTest at = new ArchivedTest(name, operator, startTime, System.currentTimeMillis(), threads.length, mtest);
