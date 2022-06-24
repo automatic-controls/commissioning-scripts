@@ -23,6 +23,10 @@ public class Mapping {
    */
   public final ConcurrentSkipListMap<String,TestingUnit> equipment = new ConcurrentSkipListMap<String,TestingUnit>();
   /**
+   * Stores group names corresponding to each group index.
+   */
+  public final ConcurrentSkipListMap<Integer,String> groupNames = new ConcurrentSkipListMap<Integer,String>();
+  /**
    * A name for this grouping.
    */
   private volatile String name;
@@ -36,6 +40,11 @@ public class Mapping {
     equipment.forEach(new java.util.function.BiConsumer<String,TestingUnit>(){
       public void accept(String str, TestingUnit tu){
         hash.x = hash.x*31+tu.hashCode();
+      }
+    });
+    groupNames.forEach(new java.util.function.BiConsumer<Integer,String>(){
+      public void accept(Integer index, String name){
+        hash.x = hash.x*31+(index^name.hashCode());
       }
     });
     return hash.x;
@@ -89,17 +98,45 @@ public class Mapping {
   public void serialize(ByteBuilder b){
     b.write(name);
     {
-      Collection<SemanticTag> tags = this.tags.clone().values();
+      final Collection<SemanticTag> tags = this.tags.clone().values();
       b.write(tags.size());
       for (SemanticTag st:tags){
         st.serialize(b);
       }
     }
     {
-      Collection<TestingUnit> equipment = this.equipment.clone().values();
-      b.write(equipment.size());
-      for (TestingUnit tu:equipment){
-        tu.serialize(b);
+      //TODO - write deserialize portion of this method for group names
+      final ArrayList<TestingUnit> equipment = new ArrayList<TestingUnit>(this.equipment.values());
+      equipment.sort(null);
+      final int len = equipment.size();
+      b.write(len);
+      if (len!=0){
+        int i=0, j, bound=0, group=-1;
+        for (;;){
+          if (i>=bound){
+            if (i==len){
+              if (bound==len){
+                break;
+              }
+              j = group+1;
+            }else{
+              j = equipment.get(i).getGroup();
+            }
+            if (i==bound){
+              group = j;
+            }else if (group!=j){
+              j = bound;
+              bound = i;
+              i = j;
+              b.write(groupNames.get(group));
+              b.write(bound-i);
+              continue;
+            }
+          }else{
+            equipment.get(i).serialize(b);
+          }
+          ++i;
+        }
       }
     }
   }

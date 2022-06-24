@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.*;
  * <pre>{@code
  * Script s = new Script();
  * s.test = ...;
+ * s.mapping = ...;
  * s.getDescription();
  * s.autoReset();
  * s.requireTags(new TreeSet<String>());
@@ -33,6 +34,8 @@ import java.util.concurrent.atomic.*;
 public class Script {
   /** Contains a reference to the object which controls this script's execution. */
   public volatile Test test = null;
+  /** Contains a reference to the mapping used to resolve testing units for this script. */
+  public volatile Mapping mapping = null;
   /** Contains references to all the control programs and semantic tag mappings which will be tested by this script. */
   public volatile Collection<ResolvedTestingUnit> units = null;
   /** Number of threads being used to execute this script. */

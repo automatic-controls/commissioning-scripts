@@ -1,5 +1,5 @@
 package aces.webctrl.scripts.commissioning.core;
-public class TestingUnit {
+public class TestingUnit implements Comparable<TestingUnit> {
   private volatile String ID;
   private volatile int groupID;
   public volatile boolean resolveSuccess = true;
@@ -22,5 +22,12 @@ public class TestingUnit {
   }
   @Override public int hashCode(){
     return groupID+31*ID.hashCode();
+  }
+  @Override public int compareTo(TestingUnit tu){
+    if (groupID==tu.groupID){
+      return ID.compareTo(tu.ID);
+    }else{
+      return groupID-tu.groupID;
+    }
   }
 }

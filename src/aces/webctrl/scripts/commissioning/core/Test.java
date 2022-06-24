@@ -179,6 +179,7 @@ public class Test {
             break init;
           }
           script.test = this;
+          script.mapping = m;
           description = script.getDescription();
           if (kill){
             clearStatus();
