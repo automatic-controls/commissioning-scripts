@@ -7,9 +7,12 @@ import java.util.concurrent.atomic.*;
  * The lifetime of a {@code Script} object looks something like:
  * <pre>{@code
  * Script s = new Script();
+ * s.getDescription();
+ * s.getParamNames();
  * s.test = ...;
  * s.mapping = ...;
- * s.getDescription();
+ * s.params = ...;
+ * s.scheduled = ...;
  * s.autoReset();
  * s.requireTags(new TreeSet<String>());
  * s.units = ...;
@@ -38,6 +41,13 @@ public class Script {
   public volatile Mapping mapping = null;
   /** Contains references to all the control programs and semantic tag mappings which will be tested by this script. */
   public volatile Collection<ResolvedTestingUnit> units = null;
+  /** Whether this script is executing due to a schedule. */
+  public volatile boolean scheduled = false;
+  /**
+   * Contains user-supplied parameters given at initialization (read-only).
+   * Parameter names (mapping keys) are specified by {@link #getParamNames()}.
+   */
+  public volatile Map<String,Boolean> params = null;
   /** Number of threads being used to execute this script. */
   public volatile int threads = -1;
   /** Maximum percentage of control programs being testing at any given time within each grouping. */
@@ -54,6 +64,11 @@ public class Script {
    * The number of tests currently running is given by {@code testsStarted.get()-testsCompleted.get()}.
    */
   public volatile AtomicInteger testsCompleted = null;
+  /**
+   * @return an array of names for parameters that should be passed to this script.
+   * These parameters will be displayed to users as a list of checkboxes.
+   */
+  public String[] getParamNames() throws Throwable { return null; }
   /**
    * This method should add required semantic tags to the given set.
    * Control programs with missing required semantic tag mappings will be ignored.
@@ -79,7 +94,7 @@ public class Script {
    * will be called after each invokation of {@link #exec(ResolvedTestingUnit) exec(ResolvedTestingUnit ctx)}.
    * Resetting a control program helps to ensure changes made during tests are temporary.
    * Each script must mark nodes for auto-reset by using
-   * {@link #markAndGetValue(String)} and {@link #markAndSetValue(String, Object)}.
+   * {@link ResolvedTestingUnit#markAndGetValue(String) ctx.markAndGetValue(tag)} and {@link ResolvedTestingUnit#markAndSetValue(String, Object) ctx.markAndSetValue(tag, value)}.
    * By default, this method returns {@code true}.
    * @return whether to automatically reset control program node values at the end of each test.
    */
@@ -101,6 +116,7 @@ public class Script {
    * This method may be concurrently invoked in separate threads at any time during the lifetime of this script, so please be mindful of thread-safety.
    * @return an HTML document to be displayed to the user which includes the status and/or results of this test.
    * {@code null} is also an acceptable return value.
+   * @see ResolvedTestingUnit#getPersistentLink()
    */
   public String getOutput() throws Throwable {
     return null;

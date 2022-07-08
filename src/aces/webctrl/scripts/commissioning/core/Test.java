@@ -19,9 +19,11 @@ public class Test {
   public volatile String status;
   private volatile boolean kill = false;
   private volatile Thread[] threads = null;
+  private volatile Set<String> paramNames = null;
   private volatile Script script = null;
   private volatile String cachedOutput = null;
   private volatile int hash = 0;
+  public volatile Map<String,Boolean> lastParams = null;
   /**
    * Construct a new test using the given parameters.
    */
@@ -29,17 +31,34 @@ public class Test {
     clearStatus();
     this.scriptFile = scriptFile;
     this.name = scriptFile.getFileName().toString();
-    refreshDescription();
+    try{
+      getScript();
+    }catch(Throwable t){
+      Initializer.log(t);
+    }
     instances.put(ID,this);
   }
   @Override public int hashCode(){
     return hash;
   }
   public void delete(){
-    instances.remove(ID);
-    kill();
     try{
+      instances.remove(ID);
+      kill();
       Files.deleteIfExists(scriptFile);
+      final Path scripts = Initializer.getScriptFolder();
+      Iterator<ScheduledTest> iter = ScheduledTest.instances.values().iterator();
+      ScheduledTest st;
+      while (iter.hasNext()){
+        st = iter.next();
+        try{
+          if (Files.isSameFile(scripts.resolve(st.getRelScriptPath()), scriptFile)){
+            iter.remove();
+          }
+        }catch(Throwable t){
+          Initializer.log(t);
+        }
+      }
     }catch(Throwable t){
       Initializer.log(t);
     }
@@ -95,16 +114,10 @@ public class Test {
     return str==null?"No description given.":str;
   }
   /**
-   * Reloads the description for this script.
+   * @return a read-only set of parameter names for this script.
    */
-  public void refreshDescription(){
-    try{
-      Script s = getScript();
-      description = s==null?"Could not locate implementation of "+Script.class.getName():s.getDescription();
-    }catch(Throwable t){
-      Initializer.log(t);
-      description = "Failed to compile script.";
-    }
+  public Set<String> getParamNames(){
+    return paramNames==null?Collections.emptySet():paramNames;
   }
   /**
    * Attempts to kill any currently executing test.
@@ -146,13 +159,14 @@ public class Test {
    * @param schedule provided for hash validation and test completion callback. {@code null} values are acceptable.
    * @return whether test initiation was successful.
    */
-  public boolean initiate(Mapping m, int threadCount, double maxTests, String operator, ScheduledTest schedule){
+  public boolean initiate(Mapping m, int threadCount, double maxTests, String operator, Map<String,Boolean> params, ScheduledTest schedule){
     if (!Initializer.isDying() && running.compareAndSet(false,true)){
       final long startTime = System.currentTimeMillis();
       boolean ret = true;
       boolean invokeTerminate = false;
       script = null;
       cachedOutput = null;
+      lastParams = params;
       init:{
         try{
           kill = false;
@@ -180,7 +194,8 @@ public class Test {
           }
           script.test = this;
           script.mapping = m;
-          description = script.getDescription();
+          script.params = params;
+          script.scheduled = schedule!=null;
           if (kill){
             clearStatus();
             ret = false;
@@ -344,11 +359,11 @@ public class Test {
                     cachedOutput = getScriptOutputSafe();
                     script = null;
                     threads = null;
-                    final ArchivedTest at = new ArchivedTest(name, operator, startTime, System.currentTimeMillis(), threads.length, mtest);
+                    final ArchivedTest at = new ArchivedTest(name, operator, startTime, System.currentTimeMillis(), threads.length, mtest, params);
                     if (cachedOutput!=null){
                       at.save(cachedOutput);
                       if (schedule!=null){
-                        schedule.onComplete(cachedOutput);
+                        schedule.onComplete(ExpansionUtils.nullifyLinks(cachedOutput));
                       }
                     }
                     running.set(false);
@@ -391,21 +406,38 @@ public class Test {
     return false;
   }
   public Script getScript() throws Throwable {
-    final SimpleCompiler sc = new SimpleCompiler();
-    final MessageDigest md = MessageDigest.getInstance("MD5");
-    try(
-      BufferedReader r = new BufferedReader(new InputStreamReader(new DigestInputStream(new FileInputStream(scriptFile.toFile()), md), java.nio.charset.StandardCharsets.UTF_8));
-    ){
-      sc.cook(name,r);
+    try{
+      final SimpleCompiler sc = new SimpleCompiler();
+      final MessageDigest md = MessageDigest.getInstance("MD5");
+      try(
+        BufferedReader r = new BufferedReader(new InputStreamReader(new DigestInputStream(new FileInputStream(scriptFile.toFile()), md), java.nio.charset.StandardCharsets.UTF_8));
+      ){
+        sc.cook(name,r);
+      }
+      hash = Arrays.hashCode(md.digest());
+      ClassLoader cl = sc.getClassLoader();
+      org.codehaus.janino.util.ClassFile[] cfs = sc.getClassFiles();
+      for (int i=0;i<cfs.length;++i){
+        try{
+          Script s = cl.loadClass(cfs[i].getThisClassName()).asSubclass(Script.class).getDeclaredConstructor().newInstance();
+          try{
+            description = s.getDescription();
+            paramNames = Collections.unmodifiableSet(new TreeSet<String>(Arrays.asList(s.getParamNames())));
+          }catch(Throwable t){
+            description = "Failed to retrieve description and parameter names.";
+            paramNames = null;
+            Initializer.log(t);
+          }
+          return s;
+        }catch(Throwable t){}
+      }
+      description = "Could not locate implementation of "+Script.class.getName()+" with no-argument constructor.";
+      paramNames = null;
+      return null;
+    }catch(Throwable t){
+      description = "Failed to compile script.";
+      paramNames = null;
+      throw t;
     }
-    hash = Arrays.hashCode(md.digest());
-    ClassLoader cl = sc.getClassLoader();
-    org.codehaus.janino.util.ClassFile[] cfs = sc.getClassFiles();
-    for (int i=0;i<cfs.length;++i){
-      try{
-        return cl.loadClass(cfs[i].getThisClassName()).asSubclass(Script.class).getDeclaredConstructor().newInstance();
-      }catch(Throwable t){}
-    }
-    return null;
   }
 }

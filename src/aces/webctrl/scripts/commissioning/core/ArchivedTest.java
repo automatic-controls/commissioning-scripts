@@ -2,6 +2,7 @@ package aces.webctrl.scripts.commissioning.core;
 import java.nio.*;
 import java.nio.file.*;
 import java.nio.channels.*;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 public class ArchivedTest {
@@ -17,6 +18,7 @@ public class ArchivedTest {
   private volatile long endTime;
   private volatile int threads;
   private volatile double maxTests;
+  private volatile Map<String,Boolean> params;
   public String getScriptName(){
     return scriptName;
   }
@@ -34,6 +36,9 @@ public class ArchivedTest {
   }
   public double getMaxTests(){
     return maxTests;
+  }
+  public Map<String,Boolean> getParams(){
+    return params;
   }
   public synchronized static boolean saveAll(){
     ByteBuffer buf = ByteBuffer.wrap(serializeAll());
@@ -79,11 +84,29 @@ public class ArchivedTest {
     b.write(endTime);
     b.write(threads);
     b.write(maxTests);
+    b.write(params.size());
+    params.forEach(new java.util.function.BiConsumer<String,Boolean>(){
+      public void accept(String name, Boolean val){
+        b.write(name);
+        b.write(val);
+      }
+    });
   }
   public static ArchivedTest deserialize(SerializationStream s){
-    return new ArchivedTest(s.readString(), s.readString(), s.readLong(), s.readLong(), s.readInt(), s.readDouble());
+    final String scriptName = s.readString();
+    final String operator = s.readString();
+    final long startTime = s.readLong();
+    final long endTime = s.readLong();
+    final int threads = s.readInt();
+    final double maxTests = s.readDouble();
+    final int len = s.readInt();
+    final TreeMap<String,Boolean> params = new TreeMap<String,Boolean>();
+    for (int i=0;i<len;++i){
+      params.put(s.readString(), s.readBoolean());
+    }
+    return new ArchivedTest(scriptName,operator,startTime,endTime,threads,maxTests,params);
   }
-  public ArchivedTest(String scriptName, String operator, long startTime, long endTime, int threads, double maxTests){
+  public ArchivedTest(String scriptName, String operator, long startTime, long endTime, int threads, double maxTests, Map<String,Boolean> params){
     try{
       dataFile = dataFolder.resolve(scriptName+'_'+String.valueOf(startTime));
     }catch(Throwable t){
@@ -95,6 +118,7 @@ public class ArchivedTest {
     this.endTime = endTime;
     this.threads = threads;
     this.maxTests = maxTests;
+    this.params = Collections.unmodifiableMap(params);
     instances.put(ID,this);
   }
   public synchronized String load(){

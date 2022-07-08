@@ -1,0 +1,248 @@
+<!--
+  BSD 3-Clause License
+  Copyright (c) 2022, Automatic Controls Equipment Systems, Inc.
+  Contributors: Cameron Vogt (@cvogt729)
+-->
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>
+      Scripts
+    </title>
+    <link rel="stylesheet" type="text/css" href="../../../../../../root/webapp/css/main.css"/>
+    <script>
+      function add(id, name, desc, active, status, params){
+        const tr = document.createElement("TR");
+        const td_name = document.createElement("TD");
+        const td_desc = document.createElement("TD");
+        const td_active = document.createElement("TD");
+        const td_status = document.createElement("TD");
+        const td_params = document.createElement("TD");
+        const td_actions = document.createElement("TD");
+        tr.appendChild(td_name);
+        tr.appendChild(td_desc);
+        tr.appendChild(td_active);
+        tr.appendChild(td_status);
+        tr.appendChild(td_params);
+        tr.appendChild(td_actions);
+        td_name.innerText = name;
+        td_desc.innerText = desc;
+        td_active.innerText = active?"Yes":"No";
+        td_status.innerText = status;
+        for (const [key,value] of Object.entries(params)){
+          const div = document.createElement("DIV");
+          const checker = document.createElement("INPUT");
+          const span = document.createElement("SPAN");
+          div.appendChild(checker);
+          div.appendChild(span);
+          checker.setAttribute("type", "checkbox");
+          span.innerText = key;
+          div.className = "tag";
+          const f = ()=>{
+            checker.checked = !checker.checked;
+            span.checked = checker.checked;
+            if (checker.checked){
+              div.style.backgroundColor = "green";
+              div.style.fontWeight = "bold";
+            }else{
+              div.style.backgroundColor = "darkred";
+              div.style.fontWeight = "initial";
+            }
+          };
+          checker.checked = !value;
+          if (active){
+            checker.disabled = true;
+          }else{
+            checker.onchange = f;
+            div.onclick = f;
+          }
+          f();
+          td_params.appendChild(div);
+        }
+        const controlForm = document.createElement("FORM");
+        const controlButton = document.createElement("BUTTON");
+        controlForm.appendChild(controlButton);
+        td_actions.appendChild(controlForm);
+        controlForm.className = "e";
+        controlForm.style.display = "inline-block";
+        controlButton.setAttribute("type","submit");
+        controlForm.setAttribute("method","POST");
+        if (active){
+          controlButton.innerText = "Stop";
+          controlForm.setAttribute("action","__PREFIX__/Scripts?cmd=stop&id="+id);
+        }else{
+          controlButton.innerText = "Start";
+          controlForm.setAttribute("action","__PREFIX__/Scripts?cmd=start&id="+id);
+          const hiddenMapping = document.createElement("INPUT");
+          const hiddenThreads = document.createElement("INPUT");
+          const hiddenMaxTests = document.createElement("INPUT");
+          const hiddenParams = document.createElement("INPUT");
+          hiddenMapping.setAttribute("type","hidden");
+          hiddenThreads.setAttribute("type","hidden");
+          hiddenMaxTests.setAttribute("type","hidden");
+          hiddenParams.setAttribute("type","hidden");
+          hiddenMapping.setAttribute("name","mapping");
+          hiddenThreads.setAttribute("name","threads");
+          hiddenMaxTests.setAttribute("name","maxTests");
+          hiddenParams.setAttribute("name","params");
+          controlForm.appendChild(hiddenMapping);
+          controlForm.appendChild(hiddenThreads);
+          controlForm.appendChild(hiddenMaxTests);
+          controlForm.appendChild(hiddenParams);
+          controlButton.onclick = ()=>{
+            const mapping = mappingSelector.value;
+            if (mapping.length===0){
+              alert("Please select a mapping.");
+              return false;
+            }
+            hiddenMapping.setAttribute("value",mapping);
+            hiddenThreads.setAttribute("value",threadSelector.value);
+            hiddenMaxTests.setAttribute("value",maxTestSelector.value);
+            let s = "";
+            for (const span of td_params.getElementsByTagName("SPAN")){
+              if (span.checked){
+                s+=span.innerText.replace(/\\/g,"\\\\").replace(/;/g,"\\;");
+                s+=';';
+              }
+            }
+            hiddenParams.setAttribute("value",s);
+            return true;
+          };
+        }
+        const outputLink = document.createElement("A");
+        td_actions.appendChild(outputLink);
+        outputLink.className = "e";
+        outputLink.innerText = "View Output";
+        outputLink.href = "__PREFIX__/ScriptOutputPage?ID="+id;
+        const deleteButton = document.createElement("BUTTON");
+        td_actions.appendChild(deleteButton);
+        deleteButton.className = "e";
+        deleteButton.innerText = "Delete";
+        deleteButton.onclick = ()=>{
+          if (confirm("Are you sure you want to delete \""+name+"\"?")){
+            deleteButton.disabled = true;
+            const req = new XMLHttpRequest();
+            req.open("POST","__PREFIX__/Scripts?cmd=delete&id="+id);
+            req.setRequestHeader("content-type", "application/x-www-form-urlencoded");
+            req.onreadystatechange = function(){
+              if (this.readyState===4){
+                if (this.status===200){
+                  dataBody.removeChild(tr);
+                }else if (this.status===404){
+                  window.location.reload();
+                }else{
+                  alert("An error has occurred.");
+                }
+                deleteButton.disabled = false;
+              }
+            };
+            req.send();
+          }
+        };
+        const downloadLink = document.createElement("A");
+        td_actions.appendChild(downloadLink);
+        downloadLink.className = "e";
+        downloadLink.innerText = "Download Script";
+        downloadLink.setAttribute("download",name);
+        downloadLink.setAttribute("target","_blank");
+        downloadLink.style.borderWidth = "2px";
+        downloadLink.style.fontWeight = "bold";
+        downloadLink.style.fontStyle = "italic";
+        downloadLink.href = "__PREFIX__/Scripts?cmd=download&id="+id;
+        tr.sortID = name;
+        tr.uniqueID = id;
+        let x = dataBody.firstElementChild;
+        while (true){
+          if (!x){
+            break;
+          }else if (x.tagName==="TR" && tr.uniqueID===x.uniqueID){
+            let y = x;
+            x = x.nextElementSibling;
+            dataBody.removeChild(y);
+          }else{
+            x = x.nextElementSibling;
+          }
+        }
+        x = dataBody.firstElementChild;
+        while (true){
+          if (!x){
+            dataBody.appendChild(tr);
+            break;
+          }else if (x.tagName==="TR" && tr.sortID<x.sortID){
+            dataBody.insertBefore(tr,x);
+            break;
+          }
+          x = x.nextElementSibling;
+        }
+      }
+      function uploadScript(){
+        if (!submittingFile && fileField.value.length>0){
+          submittingFile = true;
+          const formData = new FormData();
+          formData.append("file",fileField.files[0]);
+          const req = new XMLHttpRequest();
+          req.open("POST","__PREFIX__/Scripts?cmd=upload");
+          req.setRequestHeader("content-type", "multipart/form-data");
+          req.onreadystatechange = function(){
+            if (this.readyState===4){
+              if (this.status===200){
+                try{
+                  const ret = JSON.parse(this.responseText);
+                  add(ret.id, ret.name, ret.desc, ret.active, ret.status, ret.params);
+                }catch(e){
+                  console.error(e);
+                  alert("An error has occurred.");
+                }
+              }else{
+                alert("An error has occurred.");
+              }
+              submittingFile = false;
+            }
+          };
+          req.send(formData);
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div style="text-align:center">
+      <h1>Scripts</h1>
+      <div class="divGrouping">
+        <label for="mappingSelector">Mapping:</label>
+        <select id="mappingSelector">
+          <option value="" disabled selected hidden>--- None ---</option>
+          __MAPPING_LIST__
+        </select>
+      </div>
+      <div class="divGrouping">
+        <label for="maxTestSelector" id="maxTestSelectorLabel"></label>
+        <input type="range" style="width:20vw" min="0" max="100" step="1", value="0" id="maxTestSelector" oninput="maxTestSelectorLabel.innerText='Maximum Active Tests Per Group ('+maxTestSelector.value+'%):'">
+      </div>
+      <div class="divGrouping">
+        <label for="threadSelector" id="threadSelectorLabel"></label>
+        <input type="range" style="width:20vw" min="1" max="64" step="1", value="1" id="threadSelector" oninput="threadSelectorLabel.innerText='Allotted Threads ('+threadSelector.value+'):'">
+      </div>
+      <br><br>
+      <table>
+        <thead><tr><th>Name</th><th>Description</th><th>Active</th><th>Status</th><th>Parameters</th><th>Actions</th></tr></thead>
+        <tbody id="dataBody"></tbody>
+      </table>
+      <br>
+      <a class="e" href="__PREFIX__/ArchivedTests">Archived Tests</a>
+      <a class="e" href="__PREFIX__/ScheduledTests">Scheduled Tests</a>
+      <a class="e" href="__PREFIX__/SemanticMappings">Semantic Mappings</a>
+      <a class="e" href="__PREFIX__/ErrorLog">Error Log</a>
+      <a class="e" href="__DOC_LINK__">Documentation</a>
+      <label for="fileField" class="buttonCopy" style="border-width:2px;font-weight:bold;font-style:italic">Upload Script</label>
+      <input type="file" id="fileField" style="display:none" oninput="uploadScript();">
+    </div>
+    <script>
+      var submittingFile = false;
+      threadSelector.oninput();
+      maxTestSelector.oninput();
+      //__SCRIPT__
+      add(0,"Test Script", "Used to test everything.", false, "Idle", {"option1":true, "option2":false});
+      add(1,"Apples and oranges", "Used to test everything.", true, "50%", {"option1":false, "option2":true, "dfskndsk":false});
+    </script>
+  </body>
+</html>

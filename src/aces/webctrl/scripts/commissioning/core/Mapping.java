@@ -98,45 +98,43 @@ public class Mapping {
   public void serialize(ByteBuilder b){
     b.write(name);
     {
-      final Collection<SemanticTag> tags = this.tags.clone().values();
+      final Collection<SemanticTag> tags = new ArrayList<SemanticTag>(this.tags.values());
       b.write(tags.size());
       for (SemanticTag st:tags){
         st.serialize(b);
       }
     }
     {
-      //TODO - write deserialize portion of this method for group names
       final ArrayList<TestingUnit> equipment = new ArrayList<TestingUnit>(this.equipment.values());
       equipment.sort(null);
       final int len = equipment.size();
       b.write(len);
-      if (len!=0){
-        int i=0, j, bound=0, group=-1;
-        for (;;){
-          if (i>=bound){
-            if (i==len){
-              if (bound==len){
-                break;
-              }
-              j = group+1;
-            }else{
-              j = equipment.get(i).getGroup();
+      int i=0, j, bound=0, group=-1;
+      for (;;){
+        if (i>=bound){
+          if (i==len){
+            if (bound==len){
+              break;
             }
-            if (i==bound){
-              group = j;
-            }else if (group!=j){
-              j = bound;
-              bound = i;
-              i = j;
-              b.write(groupNames.get(group));
-              b.write(bound-i);
-              continue;
-            }
+            j = group+1;
           }else{
-            equipment.get(i).serialize(b);
+            j = equipment.get(i).getGroup();
           }
-          ++i;
+          if (i==bound){
+            group = j;
+          }else if (group!=j){
+            j = bound;
+            bound = i;
+            i = j;
+            b.write(groupNames.get(group));
+            b.write(group);
+            b.write(bound-i);
+            continue;
+          }
+        }else{
+          b.write(equipment.get(i).getID());
         }
+        ++i;
       }
     }
   }
@@ -156,9 +154,19 @@ public class Mapping {
     }
     TestingUnit tu;
     len = s.readInt();
-    for (i=0;i<len;++i){
-      tu = TestingUnit.deserialize(s);
-      m.equipment.put(tu.getID(),tu);
+    i = 0;
+    int subLen,j,grp;
+    String name;
+    while (i<len){
+      name = s.readString();
+      grp = s.readInt();
+      subLen = s.readInt();
+      m.groupNames.put(grp,name);
+      i+=subLen;
+      for (j=0;j<subLen;++j){
+        tu = new TestingUnit(s.readString(),grp);
+        m.equipment.put(tu.getID(),tu);
+      }
     }
     return m;
   }
@@ -218,8 +226,14 @@ public class Mapping {
         }
       }
       if (found){
+        final String prev = this.name;
         this.name = tryName;
-        return this.name;
+        for (ScheduledTest st:ScheduledTest.instances.values()){
+          if (prev.equals(st.getMappingName())){
+            st.setMappingName(tryName);
+          }
+        }
+        return tryName;
       }
       tryName = name+'_'+(++suffix);
     }

@@ -83,29 +83,73 @@ public class Utility {
     return new String(arr, java.nio.charset.StandardCharsets.UTF_8);
   }
   /**
-   * Encodes a string to be parsed as a list.
-   * Intended to be used to encode AJAX responses.
-   * Escapes semi-colons and backslashes using the backslash character.
+   * @return a string which encodes the given list.
+   * @see #decodeList(String)
    */
-  public static String encodeAJAX(String str){
-    int len = str.length();
-    StringBuilder sb = new StringBuilder(len+16);
-    char c;
-    for (int i=0;i<len;++i){
-      c = str.charAt(i);
-      if (c=='\\' || c==';'){
-        sb.append('\\');
-      }
-      sb.append(c);
+  public static String encodeList(List<String> list){
+    int cap = list.size()<<2;
+    for (String s:list){
+      cap+=s.length();
+    }
+    StringBuilder sb = new StringBuilder(cap);
+    for (String s:list){
+      sb.append(s.replace("\\", "\\\\").replace(";", "\\;")).append(';');
     }
     return sb.toString();
+  }
+  /**
+   * @return a list decoded from the given string.
+   * @see #encodeList(List)
+   */
+  public static ArrayList<String> decodeList(String s){
+    int len = s.length();
+    int i,j,k,max=0;
+    char c;
+    boolean esc = false;
+    for (i=0,j=0,k=0;i<len;++i){
+      if (esc){
+        esc = false;
+        ++k;
+      }else{
+        c = s.charAt(i);
+        if (c=='\\'){
+          esc = true;
+        }else if (c==';'){
+          ++j;
+          if (k>max){
+            max = k;
+          }
+          k = 0;
+        }else{
+          ++k;
+        }
+      }
+    }
+    ArrayList<String> list = new ArrayList<String>(j);
+    StringBuilder sb = new StringBuilder(max);
+    esc = false;
+    for (i=0;i<len;++i){
+      c = s.charAt(i);
+      if (esc){
+        esc = false;
+        sb.append(c);
+      }else if (c=='\\'){
+        esc = true;
+      }else if (c==';'){
+        list.add(sb.toString());
+        sb.setLength(0);
+      }else{
+        sb.append(c);
+      }
+    }
+    return list;
   }
   /**
    * Escapes a {@code String} for usage in HTML attribute values.
    * @param str is the {@code String} to escape.
    * @return the escaped {@code String}.
    */
-  public static String escapeHTML(String str){
+  public static String escapeHTML(CharSequence str){
     int len = str.length();
     StringBuilder sb = new StringBuilder(len+16);
     char c;

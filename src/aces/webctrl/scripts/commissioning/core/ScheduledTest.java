@@ -28,6 +28,8 @@ public class ScheduledTest {
   public final ConcurrentSkipListSet<String> emails = new ConcurrentSkipListSet<String>();
   /** List of emails to CC completed reports to. */
   public final ConcurrentSkipListSet<String> emailsCC = new ConcurrentSkipListSet<String>();
+  /** Map of script initialization parameters. */
+  public final ConcurrentSkipListMap<String,Boolean> params = new ConcurrentSkipListMap<String,Boolean>();
   private volatile String expr = null;
   private volatile CronSequenceGenerator cron = null;
   private volatile long nextRunTime = -1L;
@@ -97,7 +99,7 @@ public class ScheduledTest {
   /**
    * Serializes this scheduled test into the given byte builder.
    */
-  public void serialize(ByteBuilder bb){
+  public void serialize(final ByteBuilder bb){
     bb.write(relScriptPath);
     bb.write(scriptHash);
     bb.write(mappingName);
@@ -117,6 +119,14 @@ public class ScheduledTest {
     for (String str:emails){
       bb.write(str);
     }
+    Map<String,Boolean> params = this.params.clone();
+    bb.write(params.size());
+    params.forEach(new java.util.function.BiConsumer<String,Boolean>(){
+      public void accept(String name, Boolean val){
+        bb.write(name);
+        bb.write(val);
+      }
+    });
   }
   /**
    * Deserializes a single scheduled test from the given stream.
@@ -139,6 +149,10 @@ public class ScheduledTest {
     len = s.readInt();
     for (i=0;i<len;++i){
       st.emailsCC.add(s.readString());
+    }
+    len = s.readInt();
+    for (i=0;i<len;++i){
+      st.params.put(s.readString(), s.readBoolean());
     }
     return st;
   }
@@ -313,7 +327,7 @@ public class ScheduledTest {
     if (m==null){ return false; }
     Test s = getScript();
     if (s==null){ return false; }
-    return s.initiate(m,threads,maxTests,operator+" (Scheduled)",this);
+    return s.initiate(m,threads,maxTests,operator+" (Scheduled)",Collections.unmodifiableMap(params.clone()),this);
   }
   /**
    * Sends an email to people listed for this scheduled test.
@@ -382,8 +396,9 @@ public class ScheduledTest {
    * @return the {@code Mapping} object corresponding to this scheduled test; or {@code null} upon search failure.
    */
   public Mapping getMapping(){
+    final String str = mappingName;
     for (Mapping m:Mapping.instances.values()){
-      if (m.getName().equals(mappingName)){
+      if (m.getName().equals(str)){
         return m;
       }
     }
@@ -397,6 +412,19 @@ public class ScheduledTest {
       final Path p = Initializer.getScriptFolder().resolve(relScriptPath);
       for (Test t:Test.instances.values()){
         if (Files.isSameFile(p,t.getScriptFile())){
+          Set<String> names = t.getParamNames();
+          NavigableSet<String> set = params.keySet();
+          Iterator<String> iter = set.iterator();
+          while (iter.hasNext()){
+            if (!names.contains(iter.next())){
+              iter.remove();
+            }
+          }
+          for (String name:names){
+            if (!set.contains(name)){
+              params.put(name,false);
+            }
+          }
           return t;
         }
       }

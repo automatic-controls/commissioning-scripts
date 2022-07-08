@@ -3,20 +3,110 @@
 <web-app>
 
   <listener>
-    <listener-class>aces.webctrl.scripts.commissioning.web.Initializer</listener-class>
+    <listener-class>aces.webctrl.scripts.commissioning.core.Initializer</listener-class>
   </listener>
 
   <welcome-file-list>
-    <welcome-file>index</welcome-file>
+    <welcome-file>Scripts</welcome-file>
   </welcome-file-list>
 
   <servlet>
-    <servlet-name>MainPage</servlet-name>
-    <servlet-class>aces.webctrl.scripts.commissioning.web.MainPage</servlet-class>
+    <servlet-name>ErrorLog</servlet-name>
+    <servlet-class>aces.webctrl.scripts.commissioning.web.ErrorPage</servlet-class>
   </servlet>
   <servlet-mapping>
-    <servlet-name>MainPage</servlet-name>
-    <url-pattern>/index</url-pattern>
+    <servlet-name>ErrorLog</servlet-name>
+    <url-pattern>/ErrorLog</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+    <servlet-name>Scripts</servlet-name>
+    <servlet-class>aces.webctrl.scripts.commissioning.web.ScriptPage</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>Scripts</servlet-name>
+    <url-pattern>/Scripts</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+    <servlet-name>ScriptOutput</servlet-name>
+    <servlet-class>aces.webctrl.scripts.commissioning.web.ScriptOutputPage</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>ScriptOutput</servlet-name>
+    <url-pattern>/ScriptOutput</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+    <servlet-name>ArchivedTests</servlet-name>
+    <servlet-class>aces.webctrl.scripts.commissioning.web.ArchivePage</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>ArchivedTests</servlet-name>
+    <url-pattern>/ArchivedTests</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+    <servlet-name>ArchiveOutput</servlet-name>
+    <servlet-class>aces.webctrl.scripts.commissioning.web.ArchiveOutputPage</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>ArchiveOutput</servlet-name>
+    <url-pattern>/ArchiveOutput</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+    <servlet-name>ScheduledTests</servlet-name>
+    <servlet-class>aces.webctrl.scripts.commissioning.web.SchedulePage</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>ScheduledTests</servlet-name>
+    <url-pattern>/ScheduledTests</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+    <servlet-name>ScheduleEditor</servlet-name>
+    <servlet-class>aces.webctrl.scripts.commissioning.web.ScheduleEditPage</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>ScheduleEditor</servlet-name>
+    <url-pattern>/ScheduleEditor</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+    <servlet-name>SemanticMappings</servlet-name>
+    <servlet-class>aces.webctrl.scripts.commissioning.web.MappingPage</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>SemanticMappings</servlet-name>
+    <url-pattern>/SemanticMappings</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+    <servlet-name>MappingEditor</servlet-name>
+    <servlet-class>aces.webctrl.scripts.commissioning.web.MappingEditPage</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>MappingEditor</servlet-name>
+    <url-pattern>/MappingEditor</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+    <servlet-name>GeoLocationSelector</servlet-name>
+    <servlet-class>aces.webctrl.scripts.commissioning.web.GeoSelectPage</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>GeoLocationSelector</servlet-name>
+    <url-pattern>/GeoLocationSelector</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+    <servlet-name>MappingPreview</servlet-name>
+    <servlet-class>aces.webctrl.scripts.commissioning.web.MappingResolvePage</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>MappingPreview</servlet-name>
+    <url-pattern>/MappingPreview</url-pattern>
   </servlet-mapping>
 
   <security-constraint>

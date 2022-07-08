@@ -14,7 +14,7 @@ public class ResolvedTestingUnit {
   private volatile Node node;
   /** The group number to which this testing unit belongs */
   private volatile int group;
-  /** The unique ID which resolved to this location on the geographic tree. */
+  /** The unique ID which resolves to this location on the geographic tree. */
   private volatile String ID;
   /** Contains resolved semantic tag mappings for this control program. */
   private final ConcurrentSkipListMap<String,Node> tags = new ConcurrentSkipListMap<String,Node>();
@@ -61,6 +61,20 @@ public class ResolvedTestingUnit {
       return;
     }
     valid = true;
+  }
+  /**
+   * When used to build a return string for {@link Script#getOutput()},
+   * this will be dynamically replaced with a link to the location of this testing unit.
+   * @return {@code "@&#123;getPersistentLink("+getID()+")&#125;"}
+   */
+  public String getPersistentLink(){
+    return "@{getPersistentLink("+ID+")}";
+  }
+  /**
+   * @return names of all mapped semantic tags for this program.
+   */
+  public Set<String> getTags(){
+    return tags.keySet();
   }
   /**
    * @return whether this testing unit was successfully initialized.

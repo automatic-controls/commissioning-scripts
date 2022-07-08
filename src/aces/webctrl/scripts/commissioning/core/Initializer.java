@@ -10,8 +10,6 @@ public class Initializer implements ServletContextListener {
   public volatile static AddOnInfo info = null;
   /** The name of this addon */
   private volatile static String name;
-  /** Prefix used for constructing relative URL paths */
-  private volatile static String prefix;
   /** Used for logging status messages. */
   private volatile static FileLogger logger;
   /** Path to the private data folder for this addon. */
@@ -34,6 +32,8 @@ public class Initializer implements ServletContextListener {
   private final static long maxReadLock = 1000L;
   /** The maximum duration of time to lock the database for write actions. */
   private final static long maxWriteLock = 1000L;
+  /** Records all logged errors. */
+  private final static ConcurrentLinkedQueue<String> errors = new ConcurrentLinkedQueue<String>();
   // Temporary workaround until ALC releases a patch for WebCTRL
   static {
     try{
@@ -47,7 +47,6 @@ public class Initializer implements ServletContextListener {
   @Override public void contextInitialized(ServletContextEvent sce){
     info = AddOnInfo.getAddOnInfo();
     name = info.getName();
-    prefix = '/'+name+'/';
     logger = info.getDateStampLogger();
     con = DirectAccess.getDirectAccess().getRootSystemConnection();
     data = info.getPrivateDir().toPath();
@@ -234,24 +233,33 @@ public class Initializer implements ServletContextListener {
   /**
    * Logs the given message.
    */
-  public static void log(String str){
+  public static void log(final String str){
+    appendLog(Utility.getDateString(System.currentTimeMillis())+" - "+str);
     logger.println(str);
   }
   /**
    * Logs the given error.
    */
-  public static void log(Throwable t){
+  public static void log(final Throwable t){
+    appendLog(Utility.getDateString(System.currentTimeMillis())+'\n'+Utility.getStackTrace(t));
     logger.println(t);
+  }
+  private static void appendLog(String s){
+    errors.add(s);
+    while (errors.size()>32){
+      errors.poll();
+    }
+  }
+  public static StringBuilder getErrors(){
+    final StringBuilder sb = new StringBuilder(errors.size()<<8);
+    for (String s:errors){
+      sb.append(s).append("\n");
+    }
+    return sb;
   }
   /** @return the name of this application. */
   public static String getName(){
     return name;
-  }
-  /**
-   * @return the prefix to use for constructing relative URL paths.
-   */
-  public static String getPrefix(){
-    return prefix;
   }
   /**
    * @return whether the kill flag has been set.
