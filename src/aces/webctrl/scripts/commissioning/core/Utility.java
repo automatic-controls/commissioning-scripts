@@ -233,6 +233,62 @@ public class Utility {
     return sb.toString();
   }
   /**
+   * Encodes a JSON string.
+   */
+  public static String escapeJSON(String s){
+    int len = s.length();
+    StringBuilder sb = new StringBuilder(len+16);
+    char c;
+    String hex;
+    int hl;
+    for (int i=0;i<len;++i){
+      c = s.charAt(i);
+      switch (c){
+        case '\\': case '/': case '"': {
+          sb.append('\\').append(c);
+          break;
+        }
+        case '\n': {
+          sb.append("\\n");
+          break;
+        }
+        case '\t': {
+          sb.append("\\t");
+          break;
+        }
+        case '\r': {
+          sb.append("\\r");
+          break;
+        }
+        case '\b': {
+          sb.append("\\b");
+          break;
+        }
+        case '\f': {
+          sb.append("\\f");
+          break;
+        }
+        default: {
+          if (c>31 && c<127){
+            sb.append(c);
+          }else{
+            //JDK17: hex = HexFormat.of().toHexDigits(c);
+            hex = Integer.toHexString((int)c);
+            hl = hex.length();
+            if (hl<=4){
+              sb.append("\\u");
+              for (;hl<4;hl++){
+                sb.append('0');
+              }
+              sb.append(hex);
+            }
+          }
+        }
+      }
+    }
+    return sb.toString();
+  }
+  /**
    * Reverses the order and XORs each character with 4.
    * The array is modified in-place, so no copies are made.
    * For convenience, the given array is returned.

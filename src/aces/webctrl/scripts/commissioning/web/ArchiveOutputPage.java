@@ -5,11 +5,15 @@ public class ArchiveOutputPage extends ServletBase {
   @Override public void exec(final HttpServletRequest req, final HttpServletResponse res) throws Throwable {
     final String id = req.getParameter("ID");
     if (id==null){
-      res.sendError(400, "HTTP request parameter \"ID\" is missing.");
+      String err = "HTTP request parameter \"ID\" is missing.";
+      res.sendError(400, err);
+      Initializer.log(new NullPointerException(err));
     }else{
       final ArchivedTest at = ArchivedTest.instances.get(Integer.parseInt(id));
       if (at==null){
-        res.sendError(404, "Requested archived test does not exist.");
+        String err = "Requested archived test does not exist.";
+        res.sendError(404, err);
+        Initializer.log(new NullPointerException(err));
       }else{
         res.setContentType("text/html");
         res.getWriter().print(ExpansionUtils.expandLinks(at.load(), req));

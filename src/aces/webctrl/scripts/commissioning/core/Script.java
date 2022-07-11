@@ -82,7 +82,11 @@ public class Script {
   /**
    * Invoked once for every control program the script should be executed upon.
    * This method may be concurrently invoked in separate threads, so please be mindful of thread-safety.
+   * This method should periodically check {@link Test#isKilled() test.isKilled()} inbetween expensive operations
+   * to determine whether a user is attempting to forcibly stop this test (in which case, please {@code return} immediately).
+   * The current thread's interrupted status will also be set in such a case.
    * @param ctx is a context variable representing one control program with semantic tag mappings.
+   * @see Thread#interrupted()
    */
   public void exec(ResolvedTestingUnit ctx) throws Throwable {}
   /**

@@ -65,7 +65,7 @@ a {
   text-decoration: none;
   background-color: transparent;
 }
-a:link {
+a:link,a:visited {
   color: lightgreen;
 }
 a:hover {

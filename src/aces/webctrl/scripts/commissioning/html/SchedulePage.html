@@ -1,0 +1,144 @@
+<!--
+  BSD 3-Clause License
+  Copyright (c) 2022, Automatic Controls Equipment Systems, Inc.
+  Contributors: Cameron Vogt (@cvogt729)
+-->
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>
+      Schedules
+    </title>
+    <link rel="stylesheet" type="text/css" href="../../../../../../root/webapp/css/main.css"/>
+    <script>
+      function add(id, script, mapping, operator, threads, maxTests, cron, next, hash){
+        if (script.endsWith(".java")){
+          script = script.substring(0, script.length-5);
+        }
+        const tr = document.createElement("TR");
+        const td_script = document.createElement("TD");
+        const td_mapping = document.createElement("TD");
+        const td_operator = document.createElement("TD");
+        const td_threads = document.createElement("TD");
+        const td_maxTests = document.createElement("TD");
+        const td_cron = document.createElement("TD");
+        const td_next = document.createElement("TD");
+        const td_hash = document.createElement("TD");
+        const td_actions = document.createElement("TD");
+        tr.appendChild(td_script);
+        tr.appendChild(td_mapping);
+        tr.appendChild(td_operator);
+        tr.appendChild(td_threads);
+        tr.appendChild(td_maxTests);
+        tr.appendChild(td_cron);
+        tr.appendChild(td_next);
+        tr.appendChild(td_hash);
+        tr.appendChild(td_actions);
+        td_script.innerText = script;
+        td_mapping.innerText = mapping;
+        td_operator.innerText = operator;
+        td_threads.innerText = threads;
+        td_maxTests.innerText = maxTests;
+        td_cron.innerText = cron;
+        td_next.innerText = next;
+        td_hash.innerText = hash;
+        const startButtonForm = document.createElement("FORM");
+        const startButton = document.createElement("BUTTON");
+        startButtonForm.className = "e";
+        startButtonForm.style.display = "inline-block";
+        startButton.innerText = "Start";
+        startButton.setAttribute("type","submit");
+        startButtonForm.setAttribute("action","POST");
+        startButtonForm.setAttribute("action","__PREFIX__/ScheduledTests?cmd=start&ID="+id);
+        startButtonForm.appendChild(startButton);
+        td_actions.appendChild(startButtonForm);
+        const editButton = document.createElement("A");
+        editButton.className = "e";
+        editButton.innerText = "Edit";
+        editButton.href = "__PREFIX__/ScheduleEditor?ID="+id;
+        td_actions.appendChild(editButton);
+        const deleteButton = document.createElement("BUTTON");
+        deleteButton.className = "e";
+        deleteButton.innerText = "Delete";
+        deleteButton.onclick = ()=>{
+          if (confirm("Are you sure you want to delete \""+script+"\"?")){
+            deleteButton.disabled = true;
+            const req = new XMLHttpRequest();
+            req.open("POST","__PREFIX__/ScheduledTests?cmd=delete&ID="+id);
+            req.setRequestHeader("content-type", "application/x-www-form-urlencoded");
+            req.onreadystatechange = function(){
+              if (this.readyState===4){
+                if (this.status===200){
+                  dataBody.removeChild(tr);
+                }else if (this.status===404){
+                  window.location.reload();
+                }else{
+                  alert("An error has occurred.");
+                }
+                deleteButton.disabled = false;
+              }
+            };
+            req.send();
+          }
+        };
+        td_actions.appendChild(deleteButton);
+        tr.sortID = script;
+        tr.uniqueID = id;
+        let x = dataBody.firstElementChild;
+        while (true){
+          if (!x){
+            break;
+          }else if (x.tagName==="TR" && tr.uniqueID===x.uniqueID){
+            let y = x;
+            x = x.nextElementSibling;
+            dataBody.removeChild(y);
+          }else{
+            x = x.nextElementSibling;
+          }
+        }
+        x = dataBody.firstElementChild;
+        while (true){
+          if (!x){
+            dataBody.appendChild(tr);
+            break;
+          }else if (x.tagName==="TR" && tr.sortID<x.sortID){
+            dataBody.insertBefore(tr,x);
+            break;
+          }
+          x = x.nextElementSibling;
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div style="text-align:center">
+      <h1>Schedules</h1>
+      <table>
+        <thead><tr>
+          <th>Script</th>
+          <th>Mapping</th>
+          <th>Operator</th>
+          <th>Allotted Threads</th>
+          <th>Max. Active Tests Per Group</th>
+          <th><a href="https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/scheduling/support/CronExpression.html#parse-java.lang.String-" target="_blank">Cron Expression</a></th>
+          <th>Next Execution</th>
+          <th>Hash Validation</th>
+          <th>Actions</th>
+        </tr></thead>
+        <tbody id="dataBody"></tbody>
+      </table>
+      <br>
+      <a class="e" href="__PREFIX__/Scripts">Scripts</a>
+      <a class="e" href="__PREFIX__/ArchivedTests">Archived Tests</a>
+      <a class="e" href="__PREFIX__/SemanticMappings">Semantic Mappings</a>
+      <a class="e" href="__PREFIX__/ErrorLog">Error Log</a>
+      <a class="e" href="__DOC_LINK__" target="_blank">Documentation</a>
+      <a class="e" href="__PREFIX__/ScheduleEdit?ID=-1" style="border-width:2px;font-weight:bold;font-style:italic">New Schedule</a>
+    </div>
+    <script>
+      //__SCRIPT__
+      add(1, "vav_box.java", "VAV Boxes", "cvogt", "10", "20%", "0 0 0 * * *", "Midnight", "Failure");
+      add(0, "heat_pump", "Heat Pumps", "cvogt", "10", "20%", "0 0 0 * * *", "Midnight", "Success");
+    </script>
+  </body>
+</html>

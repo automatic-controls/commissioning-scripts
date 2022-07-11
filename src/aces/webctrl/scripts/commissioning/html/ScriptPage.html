@@ -12,6 +12,10 @@
     <link rel="stylesheet" type="text/css" href="../../../../../../root/webapp/css/main.css"/>
     <script>
       function add(id, name, desc, active, status, params){
+        const trimmedExtension = name.endsWith(".java");
+        if (trimmedExtension){
+          name = name.substring(0, name.length-5);
+        }
         const tr = document.createElement("TR");
         const td_name = document.createElement("TD");
         const td_desc = document.createElement("TD");
@@ -143,7 +147,7 @@
         td_actions.appendChild(downloadLink);
         downloadLink.className = "e";
         downloadLink.innerText = "Download Script";
-        downloadLink.setAttribute("download",name);
+        downloadLink.setAttribute("download",trimmedExtension?name+".java":name);
         downloadLink.setAttribute("target","_blank");
         downloadLink.style.borderWidth = "2px";
         downloadLink.style.fontWeight = "bold";
@@ -177,6 +181,10 @@
       }
       function uploadScript(){
         if (!submittingFile && fileField.value.length>0){
+          if (fileField.files[0].size>67108864){
+            alert("Selected file size has exceeded the 64MB limit.");
+            return;
+          }
           submittingFile = true;
           const formData = new FormData();
           formData.append("file",fileField.files[0]);
@@ -232,17 +240,17 @@
       <a class="e" href="__PREFIX__/ScheduledTests">Scheduled Tests</a>
       <a class="e" href="__PREFIX__/SemanticMappings">Semantic Mappings</a>
       <a class="e" href="__PREFIX__/ErrorLog">Error Log</a>
-      <a class="e" href="__DOC_LINK__">Documentation</a>
+      <a class="e" href="__DOC_LINK__" target="_blank">Documentation</a>
       <label for="fileField" class="buttonCopy" style="border-width:2px;font-weight:bold;font-style:italic">Upload Script</label>
-      <input type="file" id="fileField" style="display:none" oninput="uploadScript();">
+      <input type="file" id="fileField" accept=".java" style="display:none" oninput="uploadScript();">
     </div>
     <script>
       var submittingFile = false;
       threadSelector.oninput();
       maxTestSelector.oninput();
       //__SCRIPT__
-      add(0,"Test Script", "Used to test everything.", false, "Idle", {"option1":true, "option2":false});
-      add(1,"Apples and oranges", "Used to test everything.", true, "50%", {"option1":false, "option2":true, "dfskndsk":false});
+      //add(0,"Test Script", "Used to test everything.", false, "Idle", {"option1":true, "option2":false});
+      //add(1,"Apples and oranges", "Used to test everything.", true, "50%", {"option1":false, "option2":true, "dfskndsk":false});
     </script>
   </body>
 </html>

@@ -8,11 +8,15 @@ public class MappingResolvePage extends ServletBase {
   @Override public void exec(final HttpServletRequest req, final HttpServletResponse res) throws Throwable {
     final String id = req.getParameter("ID");
     if (id==null){
-      res.sendError(400, "HTTP request parameter \"ID\" is missing.");
+      String err = "HTTP request parameter \"ID\" is missing.";
+      res.sendError(400, err);
+      Initializer.log(new NullPointerException(err));
     }else{
       final Mapping m = Mapping.instances.get(Integer.parseInt(id));
       if (m==null){
-        res.sendError(404, "Requested mapping does not exist.");
+        String err = "Requested mapping does not exist.";
+        res.sendError(404, err);
+        Initializer.log(new NullPointerException(err));
       }else{
         final ArrayList<ResolvedInfo> rinfo = new ArrayList<ResolvedInfo>();
         Initializer.getConnection().runReadAction(FieldAccessFactory.newDisabledFieldAccess(), new ReadAction(){

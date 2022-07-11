@@ -29,6 +29,7 @@ public abstract class ServletBase extends HttpServlet {
       res.addHeader("Cache-Control", "no-cache, no-store, must-revalidate");
       exec(req,res);
     }catch(NumberFormatException e){
+      Initializer.log(e);
       res.sendError(400, "Failed to parse number from string.");
     }catch(Throwable t){
       Initializer.log(t);
