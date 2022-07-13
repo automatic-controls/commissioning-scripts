@@ -11,6 +11,13 @@
     </title>
     <link rel="stylesheet" type="text/css" href="../../../../../../root/webapp/css/main.css"/>
     <script>
+      function copyStyle(a,b){
+        const styles = window.getComputedStyle(a);
+        b.style.fontFamily = styles.fontFamily;
+        b.style.fontSize = styles.fontSize;
+        b.style.letterSpacing = styles.letterSpacing;
+        b.style.textTransform = styles.textTransform;
+      }
       function add(id, name, desc, active, status, params){
         const trimmedExtension = name.endsWith(".java");
         if (trimmedExtension){
@@ -188,6 +195,7 @@
           submittingFile = true;
           const formData = new FormData();
           formData.append("file",fileField.files[0]);
+          fileField.value = null;
           const req = new XMLHttpRequest();
           req.open("POST","__PREFIX__/Scripts?cmd=upload");
           req.setRequestHeader("content-type", "multipart/form-data");
@@ -240,14 +248,15 @@
       <a class="e" href="__PREFIX__/ScheduledTests">Scheduled Tests</a>
       <a class="e" href="__PREFIX__/SemanticMappings">Semantic Mappings</a>
       <a class="e" href="__PREFIX__/ErrorLog">Error Log</a>
-      <a class="e" href="__DOC_LINK__" target="_blank">Documentation</a>
-      <label for="fileField" class="buttonCopy" style="border-width:2px;font-weight:bold;font-style:italic">Upload Script</label>
+      <a id="documentationLink" class="e" href="__DOC_LINK__" target="_blank">Documentation</a>
+      <button id="uploadScriptButton" class="e" style="border-width:2px;font-weight:bold;font-style:italic" onclick="fileField.click()">Upload Script</button>
       <input type="file" id="fileField" accept=".java" style="display:none" oninput="uploadScript();">
     </div>
     <script>
       var submittingFile = false;
       threadSelector.oninput();
       maxTestSelector.oninput();
+      copyStyle(documentationLink,uploadScriptButton);
       //__SCRIPT__
       //add(0,"Test Script", "Used to test everything.", false, "Idle", {"option1":true, "option2":false});
       //add(1,"Apples and oranges", "Used to test everything.", true, "50%", {"option1":false, "option2":true, "dfskndsk":false});

@@ -195,7 +195,7 @@ public class Test {
           script.test = this;
           script.mapping = m;
           script.params = params;
-          script.scheduled = schedule!=null;
+          script.schedule = schedule;
           if (kill){
             clearStatus();
             ret = false;

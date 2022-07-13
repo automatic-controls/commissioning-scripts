@@ -133,6 +133,16 @@ tbody {
   margin:2px;
   user-select: none;
 }
+.tagBox {
+  border:2px solid dodgerblue;
+  display:inline-block;
+  padding-left:6px;
+  padding-right:6px;
+  margin:2px;
+  margin-left:0.5em;
+  background-color:midnightblue;
+  font-style:normal;
+}
 .divGrouping {
   display:inline-block;
   margin-left:1vw;

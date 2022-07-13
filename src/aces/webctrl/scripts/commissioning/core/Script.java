@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.*;
  * s.test = ...;
  * s.mapping = ...;
  * s.params = ...;
- * s.scheduled = ...;
+ * s.schedule = ...;
  * s.autoReset();
  * s.requireTags(new TreeSet<String>());
  * s.units = ...;
@@ -41,8 +41,8 @@ public class Script {
   public volatile Mapping mapping = null;
   /** Contains references to all the control programs and semantic tag mappings which will be tested by this script. */
   public volatile Collection<ResolvedTestingUnit> units = null;
-  /** Whether this script is executing due to a schedule. */
-  public volatile boolean scheduled = false;
+  /** The schedule which triggered this script to execute, or {@code null} if this script was manually triggered. */
+  public volatile ScheduledTest schedule = null;
   /**
    * Contains user-supplied parameters given at initialization (read-only).
    * Parameter names (mapping keys) are specified by {@link #getParamNames()}.

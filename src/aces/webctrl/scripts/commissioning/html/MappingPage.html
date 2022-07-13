@@ -1,0 +1,127 @@
+<!--
+  BSD 3-Clause License
+  Copyright (c) 2022, Automatic Controls Equipment Systems, Inc.
+  Contributors: Cameron Vogt (@cvogt729)
+-->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>
+      Mappings
+    </title>
+    <link rel="stylesheet" type="text/css" href="../../../../../../root/webapp/css/main.css"/>
+    <script>
+      function add(id, name, groups, tags){
+        const tr = document.createElement("TR");
+        const td_name = document.createElement("TD");
+        const td_groups = document.createElement("TD");
+        const td_tags = document.createElement("TD");
+        const td_actions = document.createElement("TD");
+        tr.appendChild(td_name);
+        tr.appendChild(td_groups);
+        tr.appendChild(td_tags);
+        tr.appendChild(td_actions);
+        td_name.innerText = name;
+        for (const [key,value] of Object.entries(groups)){
+          const div = document.createElement("DIV");
+          const lblSpan = document.createElement("SPAN");
+          const numDiv = document.createElement("DIV");
+          div.appendChild(lblSpan);
+          div.appendChild(numDiv);
+          td_groups.appendChild(div);
+          div.className = "tagYes";
+          lblSpan.innerText = key;
+          numDiv.innerText = value;
+          numDiv.className = "tagBox";
+        }
+        for (const tag of tags){
+          const div = document.createElement("DIV");
+          td_tags.appendChild(div);
+          div.className = "tagYes";
+          div.innerText = tag;
+        }
+        const editButton = document.createElement("A");
+        editButton.innerText = "Edit";
+        editButton.className = "e";
+        editButton.href = "__PREFIX__/MappingEditor?ID="+id;
+        td_actions.appendChild(editButton);
+        const deleteButton = document.createElement("BUTTON");
+        deleteButton.className = "e";
+        deleteButton.innerText = "Delete";
+        deleteButton.onclick = ()=>{
+          if (confirm("Are you sure you want to delete \""+name+"\"?")){
+            deleteButton.disabled = true;
+            const req = new XMLHttpRequest();
+            req.open("POST","__PREFIX__/SemanticMappings?cmd=delete&ID="+id);
+            req.setRequestHeader("content-type", "application/x-www-form-urlencoded");
+            req.onreadystatechange = function(){
+              if (this.readyState===4){
+                if (this.status===200){
+                  dataBody.removeChild(tr);
+                }else if (this.status===404){
+                  window.location.reload();
+                }else{
+                  alert("An error has occurred.");
+                }
+                deleteButton.disabled = false;
+              }
+            };
+            req.send();
+          }
+        };
+        td_actions.appendChild(deleteButton);
+        tr.sortID = name;
+        tr.uniqueID = id;
+        let x = dataBody.firstElementChild;
+        while (true){
+          if (!x){
+            break;
+          }else if (x.tagName==="TR" && tr.uniqueID===x.uniqueID){
+            let y = x;
+            x = x.nextElementSibling;
+            dataBody.removeChild(y);
+          }else{
+            x = x.nextElementSibling;
+          }
+        }
+        x = dataBody.firstElementChild;
+        while (true){
+          if (!x){
+            dataBody.appendChild(tr);
+            break;
+          }else if (x.tagName==="TR" && tr.sortID<x.sortID){
+            dataBody.insertBefore(tr,x);
+            break;
+          }
+          x = x.nextElementSibling;
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div style="text-align:center">
+      <h1>Semantic Mappings</h1>
+      <table>
+        <thead><tr>
+          <th>Name</th>
+          <th>Groups</th>
+          <th>Tags</th>
+          <th>Actions</th>
+        </tr></thead>
+        <tbody id="dataBody"></tbody>
+      </table>
+      <br>
+      <a class="e" href="__PREFIX__/Scripts">Scripts</a>
+      <a class="e" href="__PREFIX__/ArchivedTests">Archived Tests</a>
+      <a class="e" href="__PREFIX__/ScheduledTests">Scheduled Tests</a>
+      <a class="e" href="__PREFIX__/ErrorLog">Error Log</a>
+      <a class="e" href="__DOC_LINK__" target="_blank">Documentation</a>
+      <a class="e" href="__PREFIX__/MappingEditor?cmd=new" style="border-width:2px;font-weight:bold;font-style:italic">New Mapping</a>
+    </div>
+    <script>
+      //__SCRIPT__
+      //add(0,"Red",{"Dogs":6,"Cats":7,"Lizards":43},["tag1","tag2","tag3","tag4","tag5"]);
+      //add(1,"Blue",{"Dogs":3,"Cats":5,"Lizards":93},["tag1","tag2","tag3"]);
+    </script>
+  </body>
+</html>
