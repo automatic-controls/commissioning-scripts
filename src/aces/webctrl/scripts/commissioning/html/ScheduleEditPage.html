@@ -1,0 +1,226 @@
+<!--
+  BSD 3-Clause License
+  Copyright (c) 2022, Automatic Controls Equipment Systems, Inc.
+  Contributors: Cameron Vogt (@cvogt729)
+-->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>
+      Schedule Editor
+    </title>
+    <link rel="stylesheet" type="text/css" href="../../../../../../root/webapp/css/main.css"/>
+    <script>
+      function registerChange(){
+        changes = true;
+        saveButton.style.backgroundColor = "steelblue";
+      }
+      function unregisterChange(){
+        changes = false;
+        saveButton.style.backgroundColor = "initial";
+      }
+      function resize(input){
+        const styles = window.getComputedStyle(input);
+        hiddenSpan.style.fontFamily = styles.fontFamily;
+        hiddenSpan.style.fontSize = styles.fontSize;
+        hiddenSpan.style.fontStyle = styles.fontStyle;
+        hiddenSpan.style.fontWeight = styles.fontWeight;
+        hiddenSpan.style.letterSpacing = styles.letterSpacing;
+        hiddenSpan.style.textTransform = styles.textTransform;
+        hiddenSpan.style.borderLeftWidth = styles.borderLeftWidth;
+        hiddenSpan.style.borderRightWidth = styles.borderRightWidth;
+        hiddenSpan.style.paddingLeft = styles.paddingLeft;
+        hiddenSpan.style.paddingRight = styles.paddingRight;
+        hiddenSpan.innerText = input.value;
+        input.style.width = hiddenSpan.offsetWidth+"px";
+      }
+      function addParam(key, value){
+        const div = document.createElement("DIV");
+        const checker = document.createElement("INPUT");
+        const span = document.createElement("SPAN");
+        div.appendChild(checker);
+        div.appendChild(span);
+        checker.setAttribute("type", "checkbox");
+        span.innerText = key;
+        div.className = "tag";
+        div.style.marginLeft = "0.5vw";
+        div.style.marginRight = "0.5vw";
+        const f = ()=>{
+          checker.checked = !checker.checked;
+          span.checked = checker.checked;
+          if (checker.checked){
+            div.style.backgroundColor = "green";
+            div.style.fontWeight = "bold";
+          }else{
+            div.style.backgroundColor = "darkred";
+            div.style.fontWeight = "initial";
+          }
+          registerChange();
+        };
+        checker.checked = !value;
+        checker.onchange = f;
+        div.onclick = f;
+        f();
+        paramDiv.appendChild(div);
+      }
+      function loadParameters(initial){
+        paramDiv.replaceChildren();
+        const scr = scriptSelector.value;
+        if (scr.length===0){
+          return;
+        }
+        const req = new XMLHttpRequest();
+        req.open("POST","__PREFIX__/ScheduleEditor?cmd=params&ID="+scr+"&SID=__SCHEDULE_ID__");
+        req.setRequestHeader("content-type", "application/x-www-form-urlencoded");
+        req.onreadystatechange = function(){
+          if (this.readyState===4){
+            if (this.status===200){
+              const tmpBool = changes;
+              try{
+                for (const [key,value] of Object.entries(JSON.parse(this.responseText))){
+                  addParam(key,value);
+                }
+              }catch(e){
+                console.log(e);
+                alert("An error occurred while parsing script parameters.");
+              }
+              if (initial && !tmpBool){
+                unregisterChange();
+              }
+            }else{
+              alert("An error occurred while loading script parameters.");
+            }
+          }
+        };
+        req.send();
+      }
+    </script>
+  </head>
+  <body>
+    <div style="text-align:center">
+      <h1>Schedule Editor</h1>
+      <form id="mainForm" method="POST" action="__PREFIX__/ScheduleEditor?cmd=save&ID=__SCHEDULE_ID__" onsubmit="return false;">
+        <input id="hiddenParams" type="hidden" name="params">
+        <div id="paramDiv"></div>
+        <br>
+        <div class="divGrouping">
+          <label for="maxTestSelector" id="maxTestSelectorLabel"></label>
+          <input name="maxTests" type="range" style="width:20vw" min="0" max="100" step="1" value="__MAX_TESTS__" id="maxTestSelector" oninput="maxTestSelectorLabel.innerText='Maximum Active Tests Per Group ('+maxTestSelector.value+'%):';registerChange()">
+        </div>
+        <div class="divGrouping">
+          <label for="threadSelector" id="threadSelectorLabel"></label>
+          <input name="threads" type="range" style="width:20vw" min="1" max="64" step="1" value="__THREADS__" id="threadSelector" oninput="threadSelectorLabel.innerText='Allotted Threads ('+threadSelector.value+'):';registerChange()">
+        </div>
+        <br><br>
+        <div class="divGrouping">
+          <label for="scriptSelector">Script:</label>
+          <select name="script" id="scriptSelector" oninput="registerChange();loadParameters(false)">
+            __SCRIPT_LIST__
+          </select>
+        </div>
+        <div class="divGrouping">
+          <label for="mappingSelector">Mapping:</label>
+          <select name="mapping" id="mappingSelector" oninput="registerChange()">
+            __MAPPING_LIST__
+          </select>
+        </div>
+        <div class="divGrouping">
+          <label for="cronSelector"><a href="https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/scheduling/support/CronExpression.html#parse-java.lang.String-" target="_blank">Cron Expression:</a></label>
+          <input class="c" name="cron" type="text" id="cronSelector" oninput="registerChange();resize(this)" value="__CRON_EXPRESSION__">
+        </div>
+        <div class="divGrouping">
+          Next Execution: __NEXT_EXECUTION__
+        </div>
+        <br><br>
+        <div class="divGrouping">
+          <label for="emailSubjectSelector">Email Subject:</label>
+          <input class="c" name="emailSubject" type="text" id="emailSubjectSelector" oninput="registerChange();resize(this)" value="__EMAIL_SUBJECT__">
+        </div>
+        <div class="divGrouping">
+          <label for="emailToSelector">Email To:</label>
+          <input class="c" name="emailTo" type="text" id="emailToSelector" oninput="registerChange();resize(this)" value="__EMAIL_TO__">
+        </div>
+        <div class="divGrouping">
+          <label for="emailCcSelector">Email Cc:</label>
+          <input class="c" name="emailCc" type="text" id="emailCcSelector" oninput="registerChange();resize(this)" value="__EMAIL_CC__">
+        </div>
+        <button id="emailButton" type="button" class="e" style="border-width:2px;font-weight:bold;font-style:italic">Send Test Email</button>
+        <br><br>
+        <div class="divGrouping">
+          Owner: __OPERATOR__
+        </div>
+        <div class="divGrouping">
+          Hash Validation: __HASH_VALIDATION__
+        </div>
+        <button id="saveButton" type="button" class="e" style="border-width:2px;font-weight:bold;font-style:italic">Save Data</button>
+      </form>
+      <br>
+      <a class="e" href="__PREFIX__/Scripts">Scripts</a>
+      <a class="e" href="__PREFIX__/ArchivedTests">Archived Tests</a>
+      <a class="e" href="__PREFIX__/ScheduledTests">Scheduled Tests</a>
+      <a class="e" href="__PREFIX__/SemanticMappings">Semantic Mappings</a>
+      <a class="e" href="__PREFIX__/ErrorLog">Error Log</a>
+      <a class="e" href="__DOC_LINK__" target="_blank">Documentation</a>
+      <span id="hiddenSpan" style="min-width:6em;color:black;display:inline-block;position:absolute;left:-100000px;white-space:pre"></span>
+    </div>
+    <script>
+      var changes;
+      var prompt = true;
+      threadSelector.oninput();
+      maxTestSelector.oninput();
+      resize(cronSelector);
+      resize(emailSubjectSelector);
+      resize(emailToSelector);
+      resize(emailCcSelector);
+      unregisterChange();
+      loadParameters(true);
+      window.onbeforeunload = ()=>{
+        if (prompt && changes){
+          return "Changes remain unsaved. Are you sure you want to leave?";
+        }
+      };
+      emailButton.onclick = ()=>{
+        if (changes){
+          alert("Please save changes first.");
+          return false;
+        }
+        emailButton.disabled = true;
+        const req = new XMLHttpRequest();
+        req.open("POST","__PREFIX__/ScheduleEditor?cmd=email&ID=__SCHEDULE_ID__");
+        req.setRequestHeader("content-type", "application/x-www-form-urlencoded");
+        req.onreadystatechange = function(){
+          if (this.readyState===4){
+            if (this.status===200){
+              alert("Email sent successfully!");
+            }else{
+              alert("An error has occurred.");
+            }
+            emailButton.disabled = false;
+          }
+        };
+        req.send();
+      };
+      saveButton.onclick = ()=>{
+        if (scriptSelector.value.length===0){
+          alert("Please select a script.");
+          return false;
+        }
+        if (mappingSelector.value.length===0){
+          alert("Please select a mapping.");
+          return false;
+        }
+        let s = "";
+        for (const span of paramDiv.getElementsByTagName("SPAN")){
+          if (span.checked){
+            s+=span.innerText.replace(/\\/g,"\\\\").replace(/;/g,"\\;");
+            s+=';';
+          }
+        }
+        hiddenParams.value = s;
+        prompt = false;
+        mainForm.submit();
+        return true;
+      };
+    </script>
+  </body>
+</html>

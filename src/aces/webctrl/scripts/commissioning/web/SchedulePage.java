@@ -6,8 +6,17 @@ public class SchedulePage extends ServletBase {
     final String cmd = req.getParameter("cmd");
     if (cmd==null){
       final StringBuilder sb = new StringBuilder(1024);
-      //TODO
-      
+      for (ScheduledTest s:ScheduledTest.instances.values()){
+        sb.append("add(").append(s.ID).append(",\"");
+        sb.append(Utility.escapeJS(s.getRelScriptPath())).append("\",\"");
+        sb.append(Utility.escapeJS(s.getMappingName())).append("\",\"");
+        sb.append(Utility.escapeJS(s.getOperator())).append("\",\"");
+        sb.append(s.getThreads()).append("\",\"");
+        sb.append(Math.round(s.getMaxTests()*100)).append("%\",\"");
+        sb.append(Utility.escapeJS(s.getCronExpression())).append("\",\"");
+        sb.append(Utility.escapeJS(s.getNextString())).append("\",\"");
+        sb.append(s.validateHashes()?"Success":"Failure").append("\");\n");
+      }
       res.setContentType("text/html");
       res.getWriter().print(getHTML(req).replace("//__SCRIPT__",sb.toString()));
     }else{
@@ -25,13 +34,16 @@ public class SchedulePage extends ServletBase {
         }else{
           switch (cmd){
             case "start":{
-              //TODO
-
+              Test s = t.exec();
+              if (s==null){
+                res.sendRedirect(req.getContextPath()+"/ScheduledTests");
+              }else{
+                res.sendRedirect(req.getContextPath()+"/ScriptOutput?ID="+s.ID);
+              }
               break;
             }
             case "delete":{
-              //TODO
-
+              ScheduledTest.instances.remove(t.ID);
               break;
             }
             default:{

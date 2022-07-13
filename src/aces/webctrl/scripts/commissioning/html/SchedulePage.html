@@ -4,7 +4,7 @@
   Contributors: Cameron Vogt (@cvogt729)
 -->
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <title>
       Schedules
@@ -48,14 +48,14 @@
         startButtonForm.style.display = "inline-block";
         startButton.innerText = "Start";
         startButton.setAttribute("type","submit");
-        startButtonForm.setAttribute("action","POST");
+        startButtonForm.setAttribute("method","POST");
         startButtonForm.setAttribute("action","__PREFIX__/ScheduledTests?cmd=start&ID="+id);
         startButtonForm.appendChild(startButton);
         td_actions.appendChild(startButtonForm);
         const editButton = document.createElement("A");
         editButton.className = "e";
         editButton.innerText = "Edit";
-        editButton.href = "__PREFIX__/ScheduleEditor?ID="+id;
+        editButton.href = "__PREFIX__/ScheduleEditor?cmd=get&ID="+id;
         td_actions.appendChild(editButton);
         const deleteButton = document.createElement("BUTTON");
         deleteButton.className = "e";
@@ -133,12 +133,12 @@
       <a class="e" href="__PREFIX__/SemanticMappings">Semantic Mappings</a>
       <a class="e" href="__PREFIX__/ErrorLog">Error Log</a>
       <a class="e" href="__DOC_LINK__" target="_blank">Documentation</a>
-      <a class="e" href="__PREFIX__/ScheduleEdit?ID=-1" style="border-width:2px;font-weight:bold;font-style:italic">New Schedule</a>
+      <a class="e" href="__PREFIX__/ScheduleEditor?cmd=new" style="border-width:2px;font-weight:bold;font-style:italic">New Schedule</a>
     </div>
     <script>
       //__SCRIPT__
-      add(1, "vav_box.java", "VAV Boxes", "cvogt", "10", "20%", "0 0 0 * * *", "Midnight", "Failure");
-      add(0, "heat_pump", "Heat Pumps", "cvogt", "10", "20%", "0 0 0 * * *", "Midnight", "Success");
+      //add(1, "vav_box.java", "VAV Boxes", "cvogt", "10", "20%", "0 0 0 * * *", "Midnight", "Failure");
+      //add(0, "heat_pump", "Heat Pumps", "cvogt", "10", "20%", "0 0 0 * * *", "Midnight", "Success");
     </script>
   </body>
 </html>

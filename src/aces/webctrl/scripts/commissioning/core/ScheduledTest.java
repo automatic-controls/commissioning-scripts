@@ -48,6 +48,12 @@ public class ScheduledTest {
     instances.put(ID,this);
   }
   /**
+   * Used when creating a temporary instance that may be deleted soon after.
+   */
+  public ScheduledTest(){
+    relScriptPath = "";
+  }
+  /**
    * Saves all scheduled test to the data file.
    */
   public synchronized static boolean saveAll(){
@@ -307,37 +313,38 @@ public class ScheduledTest {
   }
   /**
    * Initiates this scheduled test if it is ready according to the cron expression scheduler.
-   * @return whether test initiation is successful.
+   * @return the started {@code Test}, or {@code null} if a test could not be started.
    */
-  public boolean execIfReady(){
+  public Test execIfReady(){
     final long nextRunTime = this.nextRunTime;
     if (nextRunTime!=-1 && nextRunTime<=System.currentTimeMillis()){
       return exec();
     }else{
-      return false;
+      return null;
     }
   }
   /**
    * Initiates this scheduled test.
-   * @return whether test initiation is successful.
+   * @return the started {@code Test}, or {@code null} if a test could not be started.
    */
-  public boolean exec(){
+  public Test exec(){
     reset();
     Mapping m = getMapping();
-    if (m==null){ return false; }
+    if (m==null){ return null; }
     Test s = getScript();
-    if (s==null){ return false; }
-    return s.initiate(m,threads,maxTests,operator+" (Scheduled)",Collections.unmodifiableMap(params.clone()),this);
+    if (s==null){ return null; }
+    return s.initiate(m,threads,maxTests,operator+" (Scheduled)",Collections.unmodifiableMap(params.clone()),this)?s:null;
   }
   /**
    * Sends an email to people listed for this scheduled test.
    * @param html specifies the email contents.
+   * @return whether an email was sent successfully.
    */
-  public void onComplete(String html){
+  public boolean onComplete(String html){
     try{
       String[] emails = (String[])this.emails.toArray();
       if (emails.length==0){
-        return;
+        return false;
       }
       String[] emailsCC = (String[])this.emailsCC.toArray();
       EmailParametersBuilder pb = EmailServiceFactory.createParametersBuilder();
@@ -349,8 +356,10 @@ public class ScheduledTest {
         pb.withCcRecipients(emailsCC);
       }
       EmailServiceFactory.getService().sendEmail(pb.build());
+      return true;
     }catch(Throwable t){
       Initializer.log(t);
+      return false;
     }
   }
   /**

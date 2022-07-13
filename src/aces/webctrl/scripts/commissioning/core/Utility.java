@@ -150,6 +150,7 @@ public class Utility {
    * @return the escaped {@code String}.
    */
   public static String escapeHTML(CharSequence str){
+    if (str==null){ return ""; }
     int len = str.length();
     StringBuilder sb = new StringBuilder(len+16);
     char c;
@@ -195,6 +196,7 @@ public class Utility {
    * Replaces new-line characters with the corresponding escape sequences.
    */
   public static String escapeJS(String str){
+    if (str==null){ return ""; }
     int len = str.length();
     StringBuilder sb = new StringBuilder(len+16);
     char c;
@@ -236,6 +238,7 @@ public class Utility {
    * Encodes a JSON string.
    */
   public static String escapeJSON(String s){
+    if (s==null){ return "NULL"; }
     int len = s.length();
     StringBuilder sb = new StringBuilder(len+16);
     char c;
