@@ -43,7 +43,7 @@
         const editButton = document.createElement("A");
         editButton.innerText = "Edit";
         editButton.className = "e";
-        editButton.href = "__PREFIX__/MappingEditor?ID="+id;
+        editButton.href = "__PREFIX__/MappingEditor?cmd=get&ID="+id;
         td_actions.appendChild(editButton);
         const deleteButton = document.createElement("BUTTON");
         deleteButton.className = "e";

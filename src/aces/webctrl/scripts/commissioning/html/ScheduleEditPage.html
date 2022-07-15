@@ -12,12 +12,18 @@
     <link rel="stylesheet" type="text/css" href="../../../../../../root/webapp/css/main.css"/>
     <script>
       function registerChange(){
-        changes = true;
-        saveButton.style.backgroundColor = "steelblue";
+        if (!changes){
+          changes = true;
+          mainTitle.innerText = "* Schedule Editor *";
+          document.title = mainTitle.innerText;
+        }
       }
       function unregisterChange(){
-        changes = false;
-        saveButton.style.backgroundColor = "initial";
+        if (changes){
+          changes = false;
+          mainTitle.innerText = "Schedule Editor";
+          document.title = mainTitle.innerText;
+        }
       }
       function resize(input){
         const styles = window.getComputedStyle(input);
@@ -98,7 +104,7 @@
   </head>
   <body>
     <div style="text-align:center">
-      <h1>Schedule Editor</h1>
+      <h1 id="mainTitle">Schedule Editor</h1>
       <form id="mainForm" method="POST" action="__PREFIX__/ScheduleEditor?cmd=save&ID=__SCHEDULE_ID__" onsubmit="return false;">
         <input id="hiddenParams" type="hidden" name="params">
         <div id="paramDiv"></div>
@@ -144,7 +150,7 @@
           <label for="emailCcSelector">Email Cc:</label>
           <input class="c" name="emailCc" type="text" id="emailCcSelector" oninput="registerChange();resize(this)" value="__EMAIL_CC__">
         </div>
-        <button id="emailButton" type="button" class="e" style="border-width:2px;font-weight:bold;font-style:italic">Send Test Email</button>
+        <button id="emailButton" type="button" class="e">Send Test Email</button>
         <br><br>
         <div class="divGrouping">
           Owner: __OPERATOR__
@@ -152,7 +158,8 @@
         <div class="divGrouping">
           Hash Validation: __HASH_VALIDATION__
         </div>
-        <button id="saveButton" type="button" class="e" style="border-width:2px;font-weight:bold;font-style:italic">Save Data</button>
+        <button id="saveButton" type="button" class="e">Save Changes</button>
+        <button type="button" class="e" onclick="prompt=false;window.location.reload()">Discard Changes</button>
       </form>
       <br>
       <a class="e" href="__PREFIX__/Scripts">Scripts</a>

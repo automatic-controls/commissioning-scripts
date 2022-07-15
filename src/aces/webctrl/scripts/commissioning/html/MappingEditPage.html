@@ -11,13 +11,22 @@
     </title>
     <link rel="stylesheet" type="text/css" href="../../../../../../root/webapp/css/main.css"/>
     <script>
+      function enc(s){
+        return String(s).replace(/\\/g,"\\\\").replace(/;/g,"\\;")+';';
+      }
       function registerChange(){
-        changes = true;
-        saveButton.style.backgroundColor = "steelblue";
+        if (!changes){
+          changes = true;
+          mainTitle.innerText = "* Mapping Editor *";
+          document.title = mainTitle.innerText;
+        }
       }
       function unregisterChange(){
-        changes = false;
-        saveButton.style.backgroundColor = "initial";
+        if (changes){
+          changes = false;
+          mainTitle.innerText = "Mapping Editor";
+          document.title = mainTitle.innerText;
+        }
       }
       function checkSave(){
         if (changes){
@@ -80,41 +89,381 @@
         if (tag.length>0){
           registerChange();
           const tr = document.createElement("TR");
-          
+          const td_tag = document.createElement("TD");
+          const td_expr = document.createElement("TD");
+          const td_actions = document.createElement("TD");
+          tr.appendChild(td_tag);
+          tr.appendChild(td_expr);
+          tr.appendChild(td_actions);
+          tr.semanticTag = tag;
+          tr.semanticExpression = expr;
+          td_tag.innerText = tag;
+          const exprInput = document.createElement("INPUT");
+          exprInput.className = "c";
+          exprInput.setAttribute("type","text");
+          exprInput.setAttribute("value",expr);
+          exprInput.oninput = ()=>{
+            tr.semanticExpression = exprInput.value;
+            resize(exprInput);
+            registerChange();
+          };
+          td_expr.appendChild(exprInput);
+          const deleteButton = document.createElement("BUTTON");
+          deleteButton.setAttribute("type","button");
+          deleteButton.innerText = "Delete";
+          deleteButton.className = "e";
+          deleteButton.onclick = ()=>{
+            tagTable.removeChild(tr);
+            registerChange();
+          };
+          td_actions.appendChild(deleteButton);
+          tr.sortID = tag;
+          tr.uniqueID = tag;
+          let x = tagTable.firstElementChild;
+          while (true){
+            if (!x){
+              break;
+            }else if (x.tagName==="TR" && tr.uniqueID===x.uniqueID){
+              let y = x;
+              x = x.nextElementSibling;
+              tagTable.removeChild(y);
+            }else{
+              x = x.nextElementSibling;
+            }
+          }
+          x = tagTable.firstElementChild;
+          while (true){
+            if (!x){
+              tagTable.appendChild(tr);
+              break;
+            }else if (x.tagName==="TR" && tr.sortID<x.sortID){
+              tagTable.insertBefore(tr,x);
+              break;
+            }
+            x = x.nextElementSibling;
+          }
+          resize(exprInput);
+        }
+      }
+      function addGroup(name, map){
+        registerChange();
+        const table = document.createElement("TABLE");
+        const tableHead = document.createElement("THEAD");
+        const tableBody = document.createElement("TBODY");
+        const tableFoot = document.createElement("TFOOT");
+        table.appendChild(tableHead);
+        table.appendChild(tableBody);
+        table.appendChild(tableFoot);
+        table.style.display = "inline-block";
+        table.style.margin = "1em";
+        const tr_name = document.createElement("TR");
+        const tr_head = document.createElement("TR");
+        const tr_foot = document.createElement("TR");
+        tableHead.appendChild(tr_name);
+        tableHead.appendChild(tr_head);
+        tableFoot.appendChild(tr_foot);
+        const td_name = document.createElement("TD");
+        td_name.setAttribute("colspan","2");
+        const td_name_field = document.createElement("INPUT");
+        td_name_field.setAttribute("type","text");
+        td_name_field.className = "c";
+        td_name_field.style.fontWeight = "bold";
+        td_name_field.style.fontSize = "125%";
+        if (name){
+          td_name_field.setAttribute("value",name);
+        }
+        td_name_field.oninput = ()=>{
+          resize(td_name_field);
+          registerChange();
+        };
+        td_name.appendChild(td_name_field);
+        tr_name.appendChild(td_name);
+        const th_path = document.createElement("TH");
+        const th_actions = document.createElement("TH");
+        th_path.innerText = "Equipment";
+        th_actions.innerText = "Actions";
+        tr_head.appendChild(th_path);
+        tr_head.appendChild(th_actions);
+        const td_foot = document.createElement("TD");
+        td_foot.setAttribute("colspan","2");
+        const addEquipmentButton = document.createElement("BUTTON");
+        const deleteTableButton = document.createElement("BUTTON");
+        addEquipmentButton.setAttribute("type","button");
+        deleteTableButton.setAttribute("type","button");
+        addEquipmentButton.innerText = "Add Equipment";
+        deleteTableButton.innerText = "Delete Group";
+        addEquipmentButton.className = "e";
+        deleteTableButton.className = "e";
+        td_foot.appendChild(addEquipmentButton);
+        td_foot.appendChild(deleteTableButton);
+        tr_foot.appendChild(td_foot);
+        table.removeEquipment = function(id){
+          let tr = tableBody.firstElementChild;
+          while (tr){
+            if (tr.tagName==="TR" && tr.equipmentID===id){
+              registerChange();
+              const tmp = tr;
+              tr = tr.nextElementSibling;
+              tableBody.removeChild(tmp);
+            }else{
+              tr = tr.nextElementSibling;
+            }
+          }
+        };
+        const addRow = function(id,path){
+          registerChange();
+          for (const table_ of groupDiv.getElementsByTagName("TABLE")){
+            table_.removeEquipment(id);
+          }
+          const tr = document.createElement("TR");
+          tr.equipmentID = id;
+          const td_path = document.createElement("TD");
+          const td_actions = document.createElement("TD");
+          tr.appendChild(td_path);
+          tr.appendChild(td_actions);
+          td_path.innerText = path;
+          const examineButton = document.createElement("A");
+          examineButton.className = "e";
+          examineButton.innerText = "Examine";
+          examineButton.setAttribute("target","_blank");
+          examineButton.setAttribute("href","__PREFIX__/Examine?ID="+encodeURIComponent(id));
+          td_actions.appendChild(examineButton);
+          const deleteButton = document.createElement("BUTTON");
+          deleteButton.setAttribute("type","button");
+          deleteButton.className = "e";
+          deleteButton.innerText = "Delete";
+          deleteButton.onclick = ()=>{
+            registerChange();
+            tableBody.removeChild(tr);
+          };
+          td_actions.appendChild(deleteButton);
+          tableBody.appendChild(tr);
+        };
+        addEquipmentButton.onclick = ()=>{
+          let idList = [];
+          for (const tr of tableBody.getElementsByTagName("TR")){
+            idList.push(tr.equipmentID);
+          }
+          selectionDiv.addRow = addRow;
+          selectionDiv.idList = idList;
+          groupDiv.style.display = "none";
+          selectionDiv.style.display = "table";
+          loadSelections();
+        };
+        deleteTableButton.onclick = ()=>{
+          registerChange();
+          groupDiv.removeChild(table);
+        };
+        table.encodeData = function(){
+          const groupName = td_name_field.value;
+          if (groupName.length===0){
+            return "";
+          }
+          const elems = tableBody.getElementsByTagName("TR");
+          if (elems.length===0){
+            return "";
+          }
+          let s = enc(groupName)+enc(elems.length);
+          for (const tr of elems){
+            s+=enc(tr.equipmentID);
+          }
+          return s;
+        };
+        if (map){
+          for (const [key,value] of Object.entries(map)){
+            addRow(key,value);
+          }
+        }
+        groupDiv.appendChild(table);
+        resize(td_name_field);
+      }
+      function clearSelections(){
+        groupDiv.style.display = "initial";
+        selectionDiv.style.display = "none";
+        selectionListDiv.replaceChildren();
+        selectionScope.replaceChildren();
+      }
+      function addSelectedEquipment(){
+        for (const button of selectionListDiv.getElementsByTagName("BUTTON")){
+          if (button.include){
+            selectionDiv.addRow(button.equipmentID,selectionScope.fullPath+button.innerText);
+          }
+        }
+        clearSelections();
+      }
+      function setEquipmentOptions(ret){
+        selectionScope.replaceChildren();
+        selectionListDiv.replaceChildren();
+        const sortFn = function(a,b){
+          return a["name"].localeCompare(b["name"]);
+        };
+        ret["areas"].sort(sortFn);
+        ret["equipment"].sort(sortFn);
+        selectionScope.fullPath = "";
+        for (const entry of ret["scope"]){
+          selectionScope.fullPath+=entry["name"]+" \u25B8 ";
+          const button = document.createElement("BUTTON");
+          button.innerText = entry["name"];
+          button.className = "e";
+          button.setAttribute("type","button");
+          button.style.color = "white";
+          button.style.fontSize = "130%";
+          button.onclick = ()=>{
+            loadSelections(entry["id"], ()=>{
+              loadSelections();
+            });
+          };
+          const div = document.createElement("DIV");
+          div.style.display = "inline-block";
+          div.className = "triangle";
+          selectionScope.appendChild(button);
+          selectionScope.appendChild(div);
+        }
+        for (const entry of ret["areas"]){
+          const button = document.createElement("BUTTON");
+          button.innerText = entry["name"];
+          button.className = "e";
+          button.setAttribute("type","button");
+          button.style.color = "white";
+          button.onclick = ()=>{
+            loadSelections(entry["id"], ()=>{
+              selectionListDiv.removeChild(button);
+            });
+          };
+          selectionListDiv.appendChild(button);
+        }
+        selectionListDiv.appendChild(document.createElement("BR"));
+        selectionListDiv.appendChild(document.createElement("BR"));
+        for (const entry of ret["equipment"]){
+          const present = selectionDiv.idList.includes(entry["id"]);
+          const button = document.createElement("BUTTON");
+          button.setAttribute("type","button");
+          button.innerText = entry["name"];
+          button.className = "tag";
+          button.style.margin = "0 0.5em";
+          button.style.color = "white";
+          button.include = false;
+          button.equipmentID = entry["id"];
+          if (present){
+            button.disabled = true;
+            button.style.backgroundColor = "green";
+          }else{
+            button.style.backgroundColor = "darkred";
+            button.onclick = ()=>{
+              button.include = !button.include;
+              if (button.include){
+                button.style.backgroundColor = "green";
+                button.style.border = "2px solid gold";
+              }else{
+                button.style.backgroundColor = "darkred";
+                button.style.border = "none";
+              }
+            };
+            button.selectMe = ()=>{
+              button.include = false;
+              button.onclick();
+            };
+            button.deselectMe = ()=>{
+              button.include = true;
+              button.onclick();
+            };
+          }
+          selectionListDiv.appendChild(button);
+        }
+      }
+      function loadSelections(id,onMissing){
+        //return;
+        if (!loadingSelections){
+          loadingSelections = true;
+          const req = new XMLHttpRequest();
+          req.open("POST","__PREFIX__/MappingEditor?cmd=load");
+          req.setRequestHeader("content-type", "application/x-www-form-urlencoded");
+          req.onreadystatechange = function(){
+            if (this.readyState===4){
+              if (this.status===200){
+                try{
+                  setEquipmentOptions(JSON.parse(this.responseText));
+                }catch(e){
+                  console.log(e);
+                  alert("An error has occurred.");
+                  clearSelections();
+                }
+              }else if (this.status===404 && onMissing){
+                onMissing();
+              }else{
+                alert("An error has occurred.");
+                clearSelections();
+              }
+              loadingSelections = false;
+            }
+          };
+          if (id){
+            req.send("ID="+encodeURIComponent(id))
+          }else{
+            req.send();
+          }
+        }
+      }
+      function selectAllEquipment(){
+        const ls = selectionListDiv.getElementsByTagName("BUTTON");
+        let b = true;
+        for (const button of ls){
+          if (button.selectMe && !button.include){
+            b = false;
+            break;
+          }
+        }
+        for (const button of ls){
+          if (button.selectMe){
+            if (b){
+              button.deselectMe();
+            }else{
+              button.selectMe();
+            }
+          }
         }
       }
     </script>
   </head>
   <body>
     <div style="text-align:center">
-      <h1>Mapping Editor</h1>
+      <h1 id="mainTitle">Mapping Editor</h1>
       <form id="mainForm" method="POST" action="__PREFIX__/MappingEditor?cmd=save&ID=__MAPPING_ID__" onsubmit="return false">
-        <div class="row">
-          <div class="column">
-            <table>
-              <thead><tr>
-                <th>Semantic Tag</th>
-                <th><a target="_blank" href="https://docs.oracle.com/en/java/javase/18/docs/api/java.base/java/util/regex/Pattern.html">Expression</a></th>
-                <th>Actions</th>
-              </tr></thead>
-              <tbody id="tagTable"></tbody>
-              <tbody>
-                <td><input class="c" type="text" id="newTagField" oninput="resize(this)"></td>
-                <td><input class="c" type="text" id="newExprField" oninput="resize(this)"></td>
-                <td><button type="button" class="e" onclick="addTag(newTagField.value,newExprField.value);newTagField.value='';newExprField.value='';">Create</button></td>
-              </tbody>
-            </table>
-          </div>
-          <div class="column">
-            
-          </div>
+        <div class="divGrouping">
+          <label for="nameField">Name:</label>
+          <input class="c" type="text" id="nameField" oninput="resize(this);registerChange()" value="__MAPPING_NAME__" name="name">
         </div>
-        <br>
-        <button type="button" class="e" id="clearTagsButton" onclick="clearTags()">Clear Tags</button>
-        <a class="e" id="exportTagsButton" href="#" download="tags.json" onclick="prepareTagExport()">Export Tags</a>
-        <button type="button" class="e" id="importTagsButton" onclick="fileField.click()">Import Tags</button>
+        <button type="button" class="e" onclick="addGroup()">Add Group</button>
         <a class="e" href="__PREFIX__/MappingPreview?ID=__MAPPING_ID__" onclick="return checkSave()">Preview Mapping Resolution</a>
-        <button type="submit" class="e" id="saveButton">Save Data</button>
+        <button type="submit" class="e" id="saveButton">Save Changes</button>
+        <button type="button" class="e" id="discardButton" onclick="prompt=false;window.location.reload()">Discard Changes</button>
+        <br><br>
+        <div id="groupDiv" style="display:block"></div>
+        <div id="selectionDiv" style="display:none;margin:0 auto;padding:1em;" class="popupSection">
+          <div id="selectionScope" style="margin:0"></div>
+          <div id="selectionListDiv"></div><br>
+          <button type="button" class="e" onclick="addSelectedEquipment()">Add Equipment</button>
+          <button type="button" class="e" onclick="selectAllEquipment()">Select All</button>
+          <button type="button" class="e" onclick="clearSelections()">Cancel</button>
+        </div>
+        <table style="margin:1em auto 1em auto">
+          <thead><tr>
+            <th>Semantic Tag</th>
+            <th><a target="_blank" href="https://docs.oracle.com/en/java/javase/18/docs/api/java.base/java/util/regex/Pattern.html">Expression</a></th>
+            <th>Actions</th>
+          </tr></thead>
+          <tbody id="tagTable"></tbody>
+          <tbody>
+            <td><input class="c" type="text" id="newTagField" oninput="resize(this)"></td>
+            <td><input class="c" type="text" id="newExprField" oninput="resize(this)"></td>
+            <td><button type="button" class="e" onclick="addTag(newTagField.value,newExprField.value);newTagField.value='';newExprField.value='';">Create</button></td>
+          </tbody>
+        </table>
+        <button type="button" class="e" id="clearTagsButton" onclick="clearTags()">Clear Tags</button>
+        <a class="e" id="exportTagsButton" href="#" download="tags.json" onclick="return prepareTagExport()">Export Tags</a>
+        <button type="button" class="e" id="importTagsButton" onclick="fileField.click()">Import Tags</button>
+        <input type="hidden" id="hiddenTags" name="tags" value="">
+        <input type="hidden" id="hiddenGroups" name="groups" value="">
       </form>
       <br>
       <a class="e" href="__PREFIX__/Scripts">Scripts</a>
@@ -129,9 +478,13 @@
     <script>
       var changes;
       var prompt = true;
+      var loadingSelections = false;
+      selectionDiv.idList = [];
       resize(newTagField);
       resize(newExprField);
+      resize(nameField);
       //__SCRIPT__
+      //setEquipmentOptions(JSON.parse('{"scope":[{"id":"DBID:1","name":"Root"},{"id":"DBID:2","name":"ACES"}],"areas":[{"id":"DBID:3","name":"Main Floor"},{"id":"DBID:4","name":"Roof"}],"equipment":[{"id":"DBID:5","name":"Chiller"},{"id":"DBID:6","name":"Boiler"}]}'));
       unregisterChange();
       window.onbeforeunload = ()=>{
         if (prompt && changes){
@@ -139,7 +492,31 @@
         }
       };
       saveButton.onclick = ()=>{
-        
+        if (nameField.value.length===0){
+          alert("Mappings must be named.");
+          return false;
+        }
+        let s = "";
+        for (const tr of tagTable.getElementsByTagName("TR")){
+          s+=enc(tr.semanticTag);
+          s+=enc(tr.semanticExpression);
+        }
+        hiddenTags.value = s;
+        s = "";
+        for (const table of groupDiv.getElementsByTagName("TABLE")){
+          let t = table.encodeData();
+          if (t.length===0){
+            alert("All groups must be named and non-empty.");
+            return false;
+          }
+          s+=t;
+        }
+        hiddenGroups.value = s;
+        prompt = false;
+        mainForm.submit();
+        hiddenTags.value = "";
+        hiddenGroups.value = "";
+        return true;
       };
     </script>
   </body>

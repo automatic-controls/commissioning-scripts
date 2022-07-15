@@ -92,12 +92,12 @@
   </servlet-mapping>
 
   <servlet>
-    <servlet-name>GeoLocationSelector</servlet-name>
-    <servlet-class>aces.webctrl.scripts.commissioning.web.GeoSelectPage</servlet-class>
+    <servlet-name>Examine</servlet-name>
+    <servlet-class>aces.webctrl.scripts.commissioning.web.ExaminePage</servlet-class>
   </servlet>
   <servlet-mapping>
-    <servlet-name>GeoLocationSelector</servlet-name>
-    <url-pattern>/GeoLocationSelector</url-pattern>
+    <servlet-name>Examine</servlet-name>
+    <url-pattern>/Examine</url-pattern>
   </servlet-mapping>
 
   <servlet>
