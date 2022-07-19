@@ -4,13 +4,11 @@ import java.util.*;
 import java.util.regex.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
-import java.io.*;
 import java.nio.*;
 import java.nio.file.*;
 import java.nio.channels.*;
 public class Mapping {
   public volatile static Path dataFile;
-  private final static Pattern newline = Pattern.compile("\\n");
   private final static AtomicInteger nextID = new AtomicInteger();
   public final static ConcurrentSkipListMap<Integer,Mapping> instances = new ConcurrentSkipListMap<Integer,Mapping>();
   public final int ID = nextID.getAndIncrement();
@@ -29,7 +27,7 @@ public class Mapping {
   /**
    * A name for this grouping.
    */
-  private volatile String name;
+  private volatile String name = null;
   @Override public int hashCode(){
     Container<Integer> hash = new Container<Integer>(name.hashCode());
     tags.forEach(new java.util.function.BiConsumer<String,SemanticTag>(){
@@ -171,7 +169,7 @@ public class Mapping {
     return m;
   }
   /**
-   * Constructs a new mapping.
+   * Constructs a new mapping with the given name.
    */
   public Mapping(String name){
     instances.put(ID,this);
@@ -217,47 +215,31 @@ public class Mapping {
     int suffix = 1;
     String tryName = name;
     boolean found;
-    while (true){
-      found = true;
-      for (Mapping m:instances.values()){
-        if (m!=this && m.getName().equals(tryName)){
-          found = false;
-          break;
-        }
-      }
-      if (found){
-        final String prev = this.name;
-        this.name = tryName;
-        for (ScheduledTest st:ScheduledTest.instances.values()){
-          if (prev.equals(st.getMappingName())){
-            st.setMappingName(tryName);
+    String n;
+    synchronized (instances){
+      while (true){
+        found = true;
+        for (Mapping m:instances.values()){
+          n = m.getName();
+          if (m!=this && n!=null && n.equals(tryName)){
+            found = false;
+            break;
           }
         }
-        return tryName;
+        if (found){
+          final String prev = this.name;
+          this.name = tryName;
+          if (prev!=null){
+            for (ScheduledTest st:ScheduledTest.instances.values()){
+              if (prev.equals(st.getMappingName())){
+                st.setMappingName(tryName);
+              }
+            }
+          }
+          return tryName;
+        }
+        tryName = name+'_'+(++suffix);
       }
-      tryName = name+'_'+(++suffix);
-    }
-  }
-  /**
-   * Exports all semantic tag data to the given StringBuilder.
-   */
-  public void exportTags(StringBuilder sb){
-    for (SemanticTag st:tags.values()){
-      sb.append(st.getTag()).append('\n').append(st.getExpression()).append('\n');
-    }
-  }
-  /**
-   * Imports semantic tag data from the given {@code InputStream}.
-   */
-  public void importTags(InputStream in) throws IOException, PatternSyntaxException {
-    String[] arr = newline.split(new String(Utility.readAllBytes(in),java.nio.charset.StandardCharsets.UTF_8));
-    if ((arr.length&1)==1){
-      throw new IOException("Cannot parse SemanticTag list data.");
-    }
-    SemanticTag st;
-    for (int i=0;i<arr.length;i+=2){
-      st = new SemanticTag(arr[i],arr[i+1]);
-      tags.put(st.getTag(), st);
     }
   }
 }

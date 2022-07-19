@@ -406,8 +406,10 @@ public class ScheduledTest {
    */
   public Mapping getMapping(){
     final String str = mappingName;
+    String name;
     for (Mapping m:Mapping.instances.values()){
-      if (m.getName().equals(str)){
+      name = m.getName();
+      if (name!=null && name.equals(str)){
         return m;
       }
     }

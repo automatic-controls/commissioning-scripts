@@ -11,28 +11,240 @@
     </title>
     <link rel="stylesheet" type="text/css" href="../../../../../../root/webapp/css/main.css"/>
     <script>
-      
+      function resize(input){
+        const styles = window.getComputedStyle(input);
+        hiddenSpan.style.fontFamily = styles.fontFamily;
+        hiddenSpan.style.fontSize = styles.fontSize;
+        hiddenSpan.style.fontStyle = styles.fontStyle;
+        hiddenSpan.style.fontWeight = styles.fontWeight;
+        hiddenSpan.style.letterSpacing = styles.letterSpacing;
+        hiddenSpan.style.textTransform = styles.textTransform;
+        hiddenSpan.style.borderLeftWidth = styles.borderLeftWidth;
+        hiddenSpan.style.borderRightWidth = styles.borderRightWidth;
+        hiddenSpan.style.paddingLeft = styles.paddingLeft;
+        hiddenSpan.style.paddingRight = styles.paddingRight;
+        hiddenSpan.innerText = input.value;
+        input.style.width = hiddenSpan.offsetWidth+"px";
+      }
+      function loadData(id){
+        nodePath.currentID = id;
+        nodePath.replaceChildren();
+        dataBody.replaceChildren();
+        allRows = [];
+        nodePath.innerText = "Loading...";
+        const req = new XMLHttpRequest();
+        req.open("POST","__PREFIX__/Examine?cmd=load&ID="+encodeURIComponent(id));
+        req.setRequestHeader("content-type", "application/x-www-form-urlencoded");
+        req.onreadystatechange = function(){
+          if (this.readyState===4){
+            nodePath.replaceChildren();
+            dataBody.replaceChildren();
+            allRows = [];
+            if (this.status===200){
+              try{
+                const ret = JSON.parse(this.responseText);
+                {
+                  const button = document.createElement("BUTTON");
+                  button.innerText = "Root";
+                  button.className = "e";
+                  button.style.color = "white";
+                  button.onclick = ()=>{
+                    loadData("__EQUIPMENT_ID__");
+                  };
+                  const div = document.createElement("DIV");
+                  div.style.display = "inline-block";
+                  div.className = "triangle";
+                  div.style.marginBottom = "-0.2em";
+                  nodePath.appendChild(button);
+                  nodePath.appendChild(div);
+                }
+                for (const x of ret["scope"]){
+                  const button = document.createElement("BUTTON");
+                  button.innerText = x["refName"];
+                  button.className = "e";
+                  button.style.color = "white";
+                  button.onclick = ()=>{
+                    loadData(x["ID"]);
+                  };
+                  const div = document.createElement("DIV");
+                  div.style.display = "inline-block";
+                  div.className = "triangle";
+                  div.style.marginBottom = "-0.2em";
+                  nodePath.appendChild(button);
+                  nodePath.appendChild(div);
+                }
+                const getValues = [];
+                const rows = [];
+                ret["nodes"].sort(refNameSorter);
+                //ret["nodes"].sort(displayNameSorter);
+                for (const x of ret["nodes"]){
+                  getValues.push(addRow(x["ID"], x["refName"], x["displayName"], x["expr"], x["hasChildren"], rows));
+                }
+                allRows = rows;
+                applySearchFilter();
+                if (getValues.length>0){
+                  getValues[0](getValues,1);
+                }
+              }catch(e){
+                console.log(e);
+                nodePath.innerText = "ERROR";
+              }
+            }else{
+              nodePath.innerText = "ERROR";
+            }
+          }
+        };
+        req.send();
+      }
+      function similarStrings(query,data){
+        if (data.length<query.length){
+          return false;
+        }
+        let i=0;
+        let j=0;
+        while (i<query.length){
+          let c = query.charAt(i);
+          ++i;
+          while (true){
+            if (c==data.charAt(j)){
+              ++j;
+              break;
+            }
+            ++j;
+            if (j==data.length){
+              return false;
+            }
+          }
+        }
+        return true;
+      }
+      async function applySearchFilter(){
+        const filter = searchFilter.value;
+        dataBody.replaceChildren();
+        for (const x of allRows){
+          await new Promise((resolve,reject)=>{
+            setTimeout(resolve,0);
+          });
+          //need mechanism to terminate previous executions of this method when it is called again
+          if (similarStrings(filter,x["refName"]) || similarString(filter,x["displayName"])){
+            dataBody.appendChild(x["row"]);
+          }
+        }
+      }
+      function addRow(id, refName, displayName, expr, hasChildren, rows){
+        const tr = document.createElement("TR");
+        rows.push({
+          "row":tr,
+          "refName":refName,
+          "displayName":displayName
+        });
+        const td_refName = document.createElement("TD");
+        const td_displayName = document.createElement("TD");
+        const td_value = document.createElement("TD");
+        const td_displayValue = document.createElement("TD");
+        const td_expr = document.createElement("TD");
+        td_displayName.innerText = displayName;
+        td_value.innerText = "Loading...";
+        td_displayValue.innerText = td_value.innerText;
+        const copyButton = document.createElement("BUTTON");
+        copyButton.innerText = "Copy";
+        copyButton.className = "e";
+        copyButton.onclick = ()=>{
+          const bad = (e)=>{
+            console.log(e);
+            prompt("Clipboard could not be modified. Please manually copy:",expr);
+          };
+          try{
+            navigator.clipboard.writeText(expr).catch(bad);
+          }catch(e){
+            bad(e);
+          }
+        };
+        td_expr.appendChild(copyButton);
+        if (hasChildren){
+          const refButton = document.createElement("BUTTON");
+          refButton.innerText = refName;
+          refButton.className = "e";
+          refButton.onclick = ()=>{
+            loadData(id);
+          };
+          td_refName.appendChild(refButton);
+        }else{
+          td_refName.innerText = refName;
+        }
+        tr.appendChild(td_refName);
+        tr.appendChild(td_displayName);
+        tr.appendChild(td_value);
+        tr.appendChild(td_displayValue);
+        tr.appendChild(td_expr);
+        return (arr,i)=>{
+          const req = new XMLHttpRequest();
+          req.open("POST","__PREFIX__/Examine?cmd=eval&ID="+encodeURIComponent(id));
+          req.setRequestHeader("content-type", "application/x-www-form-urlencoded");
+          req.onreadystatechange = function(){
+            if (this.readyState===4){
+              if (this.status===200){
+                try{
+                  const ret = JSON.parse(this.responseText);
+                  td_value.innerText = ret["value"];
+                  td_displayValue.innerText = ret["displayValue"];
+                }catch(e){
+                  console.log(e);
+                  td_value.innerText = "ERROR";
+                  td_displayValue.innerText = "ERROR"
+                }
+              }else{
+                td_value.innerText = "ERROR";
+                td_displayValue.innerText = "ERROR"
+              }
+              if (i<arr.length){
+                arr[i](arr,i+1);
+              }
+            }
+          };
+          req.send();
+        };
+      }
     </script>
   </head>
   <body>
     <div style="text-align:center">
       <h1>Node Examiner</h1>
       <table>
-        <thead><tr>
-          
-        </tr></thead>
+        <thead>
+          <tr><td colspan="5">__EQUIPMENT_PATH__</td></tr>
+          <tr><td colspan="5" id="nodePath"></td></tr>
+          <tr><td colspan="5"><span>Search Filter: </span><input class="c" id="searchFilter" type="text" value="" oninput="resize(this);applySearchFilter()"></td></tr>
+          <tr>
+            <th>Reference Name</th>
+            <th>Display Name</th>
+            <th>Value</th>
+            <th>Display Value</th>
+            <th>Sample Expression</th>
+          </tr>
+        </thead>
         <tbody id="dataBody"></tbody>
       </table>
       <br>
       <a class="e" href="__PREFIX__/Scripts">Scripts</a>
       <a class="e" href="__PREFIX__/ArchivedTests">Archived Tests</a>
+      <a class="e" href="__PREFIX__/ScheduledTests">Scheduled Tests</a>
       <a class="e" href="__PREFIX__/SemanticMappings">Semantic Mappings</a>
       <a class="e" href="__PREFIX__/ErrorLog">Error Log</a>
       <a class="e" href="__DOC_LINK__" target="_blank">Documentation</a>
-      <a class="e" href="__PREFIX__/ScheduleEditor?cmd=new" style="border-width:2px;font-weight:bold;font-style:italic">New Schedule</a>
+      <button class="e" onclick="loadData(nodePath.currentID)">Refresh</button>
+      <span id="hiddenSpan" style="min-width:6em;color:black;display:inline-block;position:absolute;left:-100000px;white-space:pre"></span>
     </div>
     <script>
-      //__SCRIPT__
+      resize(searchFilter);
+      var allRows = [];
+      var refNameSorter = (x,y)=>{
+        return x["refName"].localeCompare(y["refName"]);
+      };
+      var displayNameSorter = (x,y)=>{
+        return x["displayName"].localeCompare(y["displayName"]);
+      };
+      loadData("__EQUIPMENT_ID__");
     </script>
   </body>
 </html>

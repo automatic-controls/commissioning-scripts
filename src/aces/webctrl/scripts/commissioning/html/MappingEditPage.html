@@ -60,7 +60,7 @@
           alert("Please add a semantic tag before exporting.");
           return false;
         }
-        exportTagsButton.setAttribute("href", "data:text/plain;charset=utf-8,"+encodeURIComponent(JSON.stringify(tags)));
+        exportTagsButton.setAttribute("href", "data:text/plain;charset=utf-8,"+encodeURIComponent(JSON.stringify(tags, undefined, 2)));
         return true;
       }
       async function importTags(){
@@ -226,7 +226,7 @@
           examineButton.className = "e";
           examineButton.innerText = "Examine";
           examineButton.setAttribute("target","_blank");
-          examineButton.setAttribute("href","__PREFIX__/Examine?ID="+encodeURIComponent(id));
+          examineButton.setAttribute("href","__PREFIX__/Examine?cmd=get&ID="+encodeURIComponent(id));
           td_actions.appendChild(examineButton);
           const deleteButton = document.createElement("BUTTON");
           deleteButton.setAttribute("type","button");

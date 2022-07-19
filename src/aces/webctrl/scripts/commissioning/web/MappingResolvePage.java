@@ -61,7 +61,7 @@ public class MappingResolvePage extends ServletBase {
         }
         sb.append("</tbody>");
         res.setContentType("text/html");
-        res.getWriter().print(getHTML(req).replace("__NAME__", m.getName()).replace("__DATA__", sb));
+        res.getWriter().print(getHTML(req).replace("__NAME__", Utility.escapeHTML(m.getName())).replace("__DATA__", sb));
       }
     }
   }
