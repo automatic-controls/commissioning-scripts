@@ -68,15 +68,15 @@ public class Test {
    */
   public String getOutput(){
     final String cachedOutput = this.cachedOutput;
-    return cachedOutput==null?getScriptOutputSafe():cachedOutput;
+    return cachedOutput==null?getScriptOutputSafe(false):cachedOutput;
   }
-  private String getScriptOutputSafe(){
+  private String getScriptOutputSafe(boolean email){
     final Script scr = script;
     if (scr==null){
       return null;
     }
     try{
-      return scr.getOutput();
+      return scr.getOutput(email);
     }catch(Throwable t){
       Initializer.log(t);
       return Utility.getStackTrace(t);
@@ -253,7 +253,7 @@ public class Test {
               }
             }
           }
-          final GroupTracker[] groups = (GroupTracker[])groupMap.values().toArray();
+          final GroupTracker[] groups = groupMap.values().toArray(new GroupTracker[]{});
           groupMap = null;
           int threadLimit = 0;
           final double mtest = maxTests;
@@ -349,22 +349,39 @@ public class Test {
                     Initializer.log(t);
                   }
                   if (stopped.incrementAndGet()>=threads.length){
+                    boolean doClear = false;
                     try{
                       script.exit();
-                      clearStatus();
+                      doClear = true;
                     }catch(InterruptedException e){}catch(Throwable t){
                       Initializer.log(t);
-                      status = "Termination error occurred: See log file for details";
+                      status = "Termination error occurred.";
                     }
-                    cachedOutput = getScriptOutputSafe();
-                    script = null;
-                    threads = null;
-                    final ArchivedTest at = new ArchivedTest(name, operator, startTime, System.currentTimeMillis(), threads.length, mtest, params);
-                    if (cachedOutput!=null){
-                      at.save(cachedOutput);
-                      if (schedule!=null){
-                        schedule.onComplete(ExpansionUtils.nullifyLinks(cachedOutput));
+                    try{
+                      boolean csv = false;
+                      try{
+                        csv = script.isEmailCSV();
+                      }catch(Throwable t){
+                        Initializer.log(t);
                       }
+                      cachedOutput = getScriptOutputSafe(false);
+                      final ArchivedTest at = new ArchivedTest(name, operator, startTime, System.currentTimeMillis(), threads.length, mtest, params);
+                      threads = null;
+                      if (cachedOutput!=null){
+                        at.save(cachedOutput);
+                      }
+                      if (schedule!=null){
+                        String email = getScriptOutputSafe(true);
+                        if (email!=null){
+                          schedule.onComplete(ExpansionUtils.nullifyLinks(email),csv);
+                        }
+                      }
+                      script = null;
+                    }catch(Throwable t){
+                      Initializer.log(t);
+                    }
+                    if (doClear){
+                      clearStatus();
                     }
                     running.set(false);
                   }
@@ -383,7 +400,7 @@ public class Test {
             threads[i].start();
           }
         }catch(Throwable t){
-          status = "Initialization error occurred: See log file for details";
+          status = "Initialization error occurred.";
           Initializer.log(t);
           ret = false;
           break init;
@@ -393,7 +410,7 @@ public class Test {
         if (invokeTerminate){
           try{
             script.exit();
-            cachedOutput = script.getOutput();
+            cachedOutput = script.getOutput(false);
           }catch(InterruptedException e){}catch(Throwable t){
             Initializer.log(t);
           }
@@ -422,7 +439,8 @@ public class Test {
           Script s = cl.loadClass(cfs[i].getThisClassName()).asSubclass(Script.class).getDeclaredConstructor().newInstance();
           try{
             description = s.getDescription();
-            paramNames = Collections.unmodifiableSet(new TreeSet<String>(Arrays.asList(s.getParamNames())));
+            String[] params = s.getParamNames();
+            paramNames = params==null?null:Collections.unmodifiableSet(new TreeSet<String>(Arrays.asList(params)));
           }catch(Throwable t){
             description = "Failed to retrieve description and parameter names.";
             paramNames = null;

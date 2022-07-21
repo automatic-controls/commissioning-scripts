@@ -9,7 +9,7 @@
     <title>
       Mapping Editor
     </title>
-    <link rel="stylesheet" type="text/css" href="../../../../../../root/webapp/css/main.css"/>
+    <link rel="stylesheet" type="text/css" href="main.css"/>
     <script>
       function enc(s){
         return String(s).replace(/\\/g,"\\\\").replace(/;/g,"\\;")+';';
@@ -340,7 +340,7 @@
           button.setAttribute("type","button");
           button.innerText = entry["name"];
           button.className = "tag";
-          button.style.margin = "0 0.5em";
+          button.style.margin = "0.2em 0.5em";
           button.style.color = "white";
           button.include = false;
           button.equipmentID = entry["id"];
@@ -434,7 +434,7 @@
           <input class="c" type="text" id="nameField" oninput="resize(this);registerChange()" value="__MAPPING_NAME__" name="name">
         </div>
         <button type="button" class="e" onclick="addGroup()">Add Group</button>
-        <a class="e" href="__PREFIX__/MappingPreview?ID=__MAPPING_ID__" onclick="return checkSave()">Preview Mapping Resolution</a>
+        <a class="e" href="__PREFIX__/MappingPreview?ID=__MAPPING_ID__" target="_blank" onclick="return checkSave()">Preview Mapping Resolution</a>
         <button type="submit" class="e" id="saveButton">Save Changes</button>
         <button type="button" class="e" id="discardButton" onclick="prompt=false;window.location.reload()">Discard Changes</button>
         <br><br>
@@ -470,7 +470,7 @@
       <a class="e" href="__PREFIX__/ArchivedTests">Archived Tests</a>
       <a class="e" href="__PREFIX__/ScheduledTests">Scheduled Tests</a>
       <a class="e" href="__PREFIX__/SemanticMappings">Semantic Mappings</a>
-      <a class="e" href="__PREFIX__/ErrorLog">Error Log</a>
+      <a class="e" href="__PREFIX__/ErrorLog" target="_blank">Error Log</a>
       <a class="e" href="__DOC_LINK__" target="_blank">Documentation</a>
       <input type="file" id="fileField" accept=".json" style="display:none" oninput="importTags();">
       <span id="hiddenSpan" style="min-width:6em;color:black;display:inline-block;position:absolute;left:-100000px;white-space:pre"></span>

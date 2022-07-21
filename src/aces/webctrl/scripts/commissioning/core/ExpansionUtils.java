@@ -15,7 +15,7 @@ public class ExpansionUtils {
     return PERSISTENT_LINK.matcher(s).replaceAll(new Function<MatchResult,String>(){
       public String apply(MatchResult m){
         try{
-          return Matcher.quoteReplacement(Link.createLink(UITree.GEO, m.group(1)).getURL(req));
+          return Matcher.quoteReplacement(Utility.escapeHTML(Link.createLink(UITree.GEO, m.group(1)).getURL(req)));
         }catch(Throwable t){
           return "#";
         }

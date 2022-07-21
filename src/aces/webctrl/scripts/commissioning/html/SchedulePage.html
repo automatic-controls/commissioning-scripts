@@ -9,7 +9,7 @@
     <title>
       Schedules
     </title>
-    <link rel="stylesheet" type="text/css" href="../../../../../../root/webapp/css/main.css"/>
+    <link rel="stylesheet" type="text/css" href="main.css"/>
     <script>
       function add(id, script, mapping, operator, threads, maxTests, cron, next, hash){
         if (script.endsWith(".java")){
@@ -50,6 +50,7 @@
         startButton.setAttribute("type","submit");
         startButtonForm.setAttribute("method","POST");
         startButtonForm.setAttribute("action","__PREFIX__/ScheduledTests?cmd=start&ID="+id);
+        startButtonForm.setAttribute("target","_blank");
         startButtonForm.appendChild(startButton);
         td_actions.appendChild(startButtonForm);
         const editButton = document.createElement("A");
@@ -131,7 +132,7 @@
       <a class="e" href="__PREFIX__/Scripts">Scripts</a>
       <a class="e" href="__PREFIX__/ArchivedTests">Archived Tests</a>
       <a class="e" href="__PREFIX__/SemanticMappings">Semantic Mappings</a>
-      <a class="e" href="__PREFIX__/ErrorLog">Error Log</a>
+      <a class="e" href="__PREFIX__/ErrorLog" target="_blank">Error Log</a>
       <a class="e" href="__DOC_LINK__" target="_blank">Documentation</a>
       <a class="e" href="__PREFIX__/ScheduleEditor?cmd=new" style="border-width:2px;font-weight:bold;font-style:italic">New Schedule</a>
     </div>

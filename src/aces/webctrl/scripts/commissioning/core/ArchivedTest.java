@@ -129,7 +129,7 @@ public class ArchivedTest {
       return Files.exists(dataFile)?new String(Files.readAllBytes(dataFile), java.nio.charset.StandardCharsets.UTF_8):"Could not locate file.";
     }catch(Throwable t){
       Initializer.log(t);
-      return "An error occurred while loading the data file. See the log file for more details.";
+      return "An error occurred while loading the data file.";
     }
   }
   public synchronized boolean save(String document){

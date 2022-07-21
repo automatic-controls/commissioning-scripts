@@ -7,6 +7,8 @@ import java.util.concurrent.atomic.*;
 import java.nio.*;
 import java.nio.file.*;
 import java.nio.channels.*;
+import javax.activation.*;
+import java.io.*;
 /**
  * Uses cron expressions to control scheduled execution of scripts.
  * Upon test completion, reports may be automatically emailed to a list of addresses using the default WebCTRL mail server settings.
@@ -337,25 +339,52 @@ public class ScheduledTest {
   }
   /**
    * Sends an email to people listed for this scheduled test.
-   * @param html specifies the email contents.
+   * @param data specifies the email contents.
    * @return whether an email was sent successfully.
    */
-  public boolean onComplete(String html){
+  public boolean onComplete(final String data, boolean csv){
     try{
-      String[] emails = (String[])this.emails.toArray();
+      String[] emails = this.emails.toArray(new String[]{});
       if (emails.length==0){
         return false;
       }
-      String[] emailsCC = (String[])this.emailsCC.toArray();
+      String[] emailsCC = this.emailsCC.toArray(new String[]{});
       EmailParametersBuilder pb = EmailServiceFactory.createParametersBuilder();
       pb.withSubject(emailSubject);
-      pb.withMessageContents(html);
-      pb.withMessageMimeType("text/html");
       pb.withToRecipients(emails);
       if (emailsCC.length>0){
         pb.withCcRecipients(emailsCC);
       }
-      EmailServiceFactory.getService().sendEmail(pb.build());
+      if (csv){
+        pb.withMessageContents("This is an automated report. Refer to the attached CSV file.");
+        pb.withMessageMimeType("text/plain");
+      }else{
+        pb.withMessageContents(data);
+        pb.withMessageMimeType("text/html");
+      }
+      EmailParameters ep = pb.build();
+      if (csv){
+        AttachmentInfo info = new AttachmentInfo();
+        info.setAttachment(new DataSource(){
+          private final byte[] arr = data.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+          public String getContentType(){
+            return "text/csv";
+          }
+          public String getName(){
+            return "report.csv";
+          }
+          public OutputStream getOutputStream() throws IOException {
+            throw new IOException("An OutputStream could not be created for this DataSource.");
+          }
+          public InputStream getInputStream(){
+            return new ByteArrayInputStream(arr);
+          }
+        });
+        info.setMimeType("csv");
+        info.setName("report.csv");
+        ep.addAttachment(info);
+      }
+      EmailServiceFactory.getService().sendEmail(ep);
       return true;
     }catch(Throwable t){
       Initializer.log(t);

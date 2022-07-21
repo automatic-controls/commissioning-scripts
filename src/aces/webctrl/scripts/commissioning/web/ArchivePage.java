@@ -4,9 +4,14 @@ import javax.servlet.http.*;
 public class ArchivePage extends ServletBase {
   @Override public void exec(final HttpServletRequest req, final HttpServletResponse res) throws Throwable {
     final StringBuilder sb = new StringBuilder(ArchivedTest.instances.size()<<7);
+    String name;
     for (ArchivedTest at:ArchivedTest.instances.values()){
+      name = at.getScriptName();
+      if (name.endsWith(".java")){
+        name = name.substring(0,name.length()-5);
+      }
       sb.append("<tr>");
-      sb.append("\n<td>").append(Utility.escapeHTML(at.getScriptName())).append("</td>");
+      sb.append("\n<td>").append(Utility.escapeHTML(name)).append("</td>");
       sb.append("\n<td>").append(Utility.escapeHTML(at.getOperator())).append("</td>");
       sb.append("\n<td>").append(Utility.escapeHTML(Utility.getDateString(at.getStart()))).append("</td>");
       sb.append("\n<td>").append(Utility.escapeHTML(Utility.getDateString(at.getEnd()))).append("</td>");
@@ -19,7 +24,7 @@ public class ArchivePage extends ServletBase {
         }
       });
       sb.append("</td>");
-      sb.append("\n<td><a href=\"").append(req.getContextPath()).append("/ArchiveOutput?ID=").append(at.ID).append("\"></a></td>");
+      sb.append("\n<td><a target=\"_blank\" href=\"").append(req.getContextPath()).append("/ArchiveOutput?ID=").append(at.ID).append("\">View Results</a></td>");
       sb.append("\n</tr>\n");
     }
     res.setContentType("text/html");

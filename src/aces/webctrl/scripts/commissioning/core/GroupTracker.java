@@ -24,7 +24,7 @@ public class GroupTracker {
    * Invoked to determine whether it is okay to start another test in this group.
    */
   public synchronized boolean start(){
-    if (completed<size && running<maxRunning){
+    if (completed+running<size && running<maxRunning){
       ++running;
       return true;
     }else{
@@ -45,5 +45,11 @@ public class GroupTracker {
    */
   public boolean hasRunning(){
     return running>0;
+  }
+  /**
+   * @return a {@code String} which describes this object.
+   */
+  @Override public String toString(){
+    return Utility.format("GroupTracker(index=$0, size=$1, maxRunning=$2, running=$3, completed=$4)", num, size, maxRunning, running, completed);
   }
 }

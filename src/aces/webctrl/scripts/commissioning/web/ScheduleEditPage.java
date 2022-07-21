@@ -157,7 +157,7 @@ public class ScheduleEditPage extends ServletBase {
                 break;
               }
               case "email":{
-                if (!s.onComplete("<!DOCTYPE html><html lang=\"en\"><head><title>Test</title></head><body>This is a test.</body></html>")){
+                if (!s.onComplete("<!DOCTYPE html><html lang=\"en\"><head><title>Test</title></head><body>This is a test.</body></html>",false)){
                   res.setStatus(500);
                 }
                 break;
@@ -176,8 +176,8 @@ public class ScheduleEditPage extends ServletBase {
   private final static Pattern emailDelimiter = Pattern.compile(";");
   private static boolean save(ScheduledTest t, HttpServletRequest req, HttpServletResponse res){
     try{
-      final Test test = Test.instances.get(Integer.parseInt("script"));
-      t.setMappingName(Mapping.instances.get(Integer.parseInt("mapping")).getName());
+      final Test test = Test.instances.get(Integer.parseInt(req.getParameter("script")));
+      t.setMappingName(Mapping.instances.get(Integer.parseInt(req.getParameter("mapping"))).getName());
       t.setRelScriptPath(test.getScriptFile());
       t.setMaxTests(Double.parseDouble(req.getParameter("maxTests"))/100);
       t.setThreads(Integer.parseInt(req.getParameter("threads")));
@@ -187,12 +187,16 @@ public class ScheduleEditPage extends ServletBase {
         String[] arr = emailDelimiter.split(req.getParameter("emailTo"));
         t.emails.clear();
         for (String s:arr){
-          t.emails.add(s);
+          if (s.length()>0){
+            t.emails.add(s);
+          }
         }
         arr = emailDelimiter.split(req.getParameter("emailCc"));
         t.emailsCC.clear();
         for (String s:arr){
-          t.emailsCC.add(s);
+          if (s.length()>0){
+            t.emailsCC.add(s);
+          }
         }
       }
       t.params.clear();

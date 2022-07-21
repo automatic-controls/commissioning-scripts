@@ -19,7 +19,7 @@ public class ScriptOutputPage extends ServletBase {
         if (output==null){
           String err = "Output cache is empty.";
           res.sendError(404, err);
-          Initializer.log(new NullPointerException(err));
+          //Initializer.log(new NullPointerException(err));
         }else{
           res.setContentType("text/html");
           res.getWriter().print(ExpansionUtils.expandLinks(output, req));

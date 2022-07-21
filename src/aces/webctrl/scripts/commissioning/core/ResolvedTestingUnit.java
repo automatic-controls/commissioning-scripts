@@ -16,6 +16,10 @@ public class ResolvedTestingUnit {
   private volatile int group;
   /** The unique ID which resolves to this location on the geographic tree. */
   private volatile String ID;
+  /** The display name of the location represented by this object. */
+  private volatile String displayName;
+  /** The display path of the location represented by this object. */
+  private volatile String displayPath;
   /** Contains resolved semantic tag mappings for this control program. */
   private final ConcurrentSkipListMap<String,Node> tags = new ConcurrentSkipListMap<String,Node>();
   /** Contains node-value markings possibly used for resetting values after test completion. */
@@ -42,6 +46,8 @@ public class ResolvedTestingUnit {
         tu.resolveSuccess = false;
         return;
       }
+      displayName = loc.getDisplayName();
+      displayPath = loc.getRelativeDisplayPath(null);
       node = loc.toNode();
       group = tu.getGroup();
       Node n;
@@ -61,6 +67,18 @@ public class ResolvedTestingUnit {
       return;
     }
     valid = true;
+  }
+  /**
+   * @return the display name of this location.
+   */
+  public String getDisplayName(){
+    return displayName;
+  }
+  /**
+   * @return the display path of this location.
+   */
+  public String getDisplayPath(){
+    return displayPath;
   }
   /**
    * When used to build a return string for {@link Script#getOutput()},
@@ -174,6 +192,31 @@ public class ResolvedTestingUnit {
       public void execute(SystemAccess sys){
         try{
           ret.setResult(n.getValue());
+        }catch(Throwable t){
+          ret.setResult(null);
+        }
+      }
+    });
+    return ret.waitForResult(-1)?ret.getResult():null;
+  }
+  /**
+   * @return the display value of the node mapped with the given semantic tag, or {@code null} if the semantic tag mapping does not exist or the value cannot be retrieved for any other reason.
+   */
+  public String getDisplayValue(String tag) throws InterruptedException {
+    return getDisplayValue(tags.get(tag));
+  }
+  /**
+   * @return the display value of the node, or {@code null} if the value could not be retrieved.
+   */
+  public static String getDisplayValue(Node n) throws InterruptedException {
+    if (n==null){
+      return null;
+    }
+    final Result<String> ret = new Result<String>();
+    Initializer.enqueue(new ReadAction(){
+      public void execute(SystemAccess sys){
+        try{
+          ret.setResult(n.getDisplayValue());
         }catch(Throwable t){
           ret.setResult(null);
         }

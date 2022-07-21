@@ -22,6 +22,19 @@ public class Utility {
    * The system default line terminator.
    */
   public final static String NEW_LINE = System.lineSeparator();
+  private final static Pattern formatter = Pattern.compile("\\$(\\d)");
+  public static String format(final String s, final Object... args){
+    final String[] args_ = new String[args.length];
+    for (int i=0;i<args.length;++i){
+      args_[i] = args[i]==null?"":Matcher.quoteReplacement(args[i].toString());
+    }
+    return formatter.matcher(s).replaceAll(new java.util.function.Function<MatchResult,String>(){
+      public String apply(MatchResult m){
+        int i = Integer.parseInt(m.group(1));
+        return i<args.length?args_[i]:"";
+      }
+    });
+  }
   /**
    * @param time should be some value returned by {@code System.currentTimeMillis()}.
    * @return a formatted {@code String} representing the given time.
@@ -143,6 +156,18 @@ public class Utility {
       }
     }
     return list;
+  }
+  /**
+   * Escapes a {@code String} for usage in CSV document cells.
+   * @param str is the {@code String} to escape.
+   * @return the escaped {@code String}.
+   */
+  public static String escapeCSV(String str){
+    if (str.indexOf(',')==-1 && str.indexOf('"')==-1 && str.indexOf('\n')==-1 && str.indexOf('\r')==-1){
+      return str;
+    }else{
+      return '"'+str.replace("\"","\"\"")+'"';
+    }
   }
   /**
    * Escapes a {@code String} for usage in HTML attribute values.

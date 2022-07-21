@@ -48,9 +48,6 @@ public abstract class ServletBase extends HttpServlet {
       html = Utility.loadResourceAsString("aces/webctrl/scripts/commissioning/html/"+getClass().getSimpleName()+".html").replace(
         "__DOC_LINK__",
         "https://github.com/automatic-controls/commissioning-scripts/blob/main/README.md"
-      ).replace(
-        "<link rel=\"stylesheet\" type=\"text/css\" href=\"../../../../../../root/webapp/css/main.css\"/>",
-        "<link rel=\"stylesheet\" type=\"text/css\" href=\"css/main.css\"/>"
       );
     }
     return html.replace("__PREFIX__", req.getContextPath());

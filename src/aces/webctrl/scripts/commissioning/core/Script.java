@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.*;
  *   s.exec(rtu);
  * &#125;
  * s.exit();
+ * s.isEmailCSV();
  * ArchivedTest.save(s.getOutput());
  * s = null;
  * }</pre>
@@ -114,15 +115,23 @@ public class Script {
   }
   /**
    * This method should be overridden to provide feedback to users.
-   * After {@link #exit()} has been called, this method will be invoked once,
+   * After {@link #exit()} has been called, this method will be invoked,
    * and the resulting HTML document will be archived as the final result of this test.
-   * If this script is running on a schedule, the final archived document will be emailed to all specified recipients.
+   * If this script is running on a schedule, the finished document will be emailed to all specified recipients.
    * This method may be concurrently invoked in separate threads at any time during the lifetime of this script, so please be mindful of thread-safety.
+   * @param email whether the returned {@code String} will be emailed from a schedule.
    * @return an HTML document to be displayed to the user which includes the status and/or results of this test.
    * {@code null} is also an acceptable return value.
+   * @see #isEmailCSV()
    * @see ResolvedTestingUnit#getPersistentLink()
    */
-  public String getOutput() throws Throwable {
+  public String getOutput(boolean email) throws Throwable {
     return null;
+  }
+  /**
+   * @return whether emailed reports should be sent as a CSV attachment.
+   */
+  public boolean isEmailCSV() throws Throwable {
+    return false;
   }
 }

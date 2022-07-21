@@ -9,7 +9,7 @@
     <title>
       Node Examiner
     </title>
-    <link rel="stylesheet" type="text/css" href="../../../../../../root/webapp/css/main.css"/>
+    <link rel="stylesheet" type="text/css" href="main.css"/>
     <script>
       function resize(input){
         const styles = window.getComputedStyle(input);
@@ -81,7 +81,7 @@
                   getValues.push(addRow(x["ID"], x["refName"], x["displayName"], x["expr"], x["hasChildren"], rows));
                 }
                 allRows = rows;
-                applySearchFilter();
+                searchFilter.value = "";
                 if (getValues.length>0){
                   getValues[0](getValues,1);
                 }
@@ -96,37 +96,11 @@
         };
         req.send();
       }
-      function similarStrings(query,data){
-        if (data.length<query.length){
-          return false;
-        }
-        let i=0;
-        let j=0;
-        while (i<query.length){
-          let c = query.charAt(i);
-          ++i;
-          while (true){
-            if (c==data.charAt(j)){
-              ++j;
-              break;
-            }
-            ++j;
-            if (j==data.length){
-              return false;
-            }
-          }
-        }
-        return true;
-      }
-      async function applySearchFilter(){
+      function applySearchFilter(){
         const filter = searchFilter.value;
         dataBody.replaceChildren();
         for (const x of allRows){
-          await new Promise((resolve,reject)=>{
-            setTimeout(resolve,0);
-          });
-          //need mechanism to terminate previous executions of this method when it is called again
-          if (similarStrings(filter,x["refName"]) || similarString(filter,x["displayName"])){
+          if (x["refName"].indexOf(filter)!=-1 || x["displayName"].indexOf(filter)!=-1){
             dataBody.appendChild(x["row"]);
           }
         }
@@ -177,6 +151,7 @@
         tr.appendChild(td_value);
         tr.appendChild(td_displayValue);
         tr.appendChild(td_expr);
+        dataBody.appendChild(tr);
         return (arr,i)=>{
           const req = new XMLHttpRequest();
           req.open("POST","__PREFIX__/Examine?cmd=eval&ID="+encodeURIComponent(id));
@@ -230,7 +205,7 @@
       <a class="e" href="__PREFIX__/ArchivedTests">Archived Tests</a>
       <a class="e" href="__PREFIX__/ScheduledTests">Scheduled Tests</a>
       <a class="e" href="__PREFIX__/SemanticMappings">Semantic Mappings</a>
-      <a class="e" href="__PREFIX__/ErrorLog">Error Log</a>
+      <a class="e" href="__PREFIX__/ErrorLog" target="_blank">Error Log</a>
       <a class="e" href="__DOC_LINK__" target="_blank">Documentation</a>
       <button class="e" onclick="loadData(nodePath.currentID)">Refresh</button>
       <span id="hiddenSpan" style="min-width:6em;color:black;display:inline-block;position:absolute;left:-100000px;white-space:pre"></span>

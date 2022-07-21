@@ -1,11 +1,13 @@
 package aces.webctrl.scripts.commissioning.web;
 import aces.webctrl.scripts.commissioning.core.*;
 import com.controlj.green.addonsupport.access.*;
+import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.http.*;
 import java.util.*;
 import java.nio.*;
 import java.nio.file.*;
 import java.nio.channels.*;
+@MultipartConfig
 public class ScriptPage extends ServletBase {
   @Override public void exec(final HttpServletRequest req, final HttpServletResponse res) throws Throwable {
     final String cmd = req.getParameter("cmd");
@@ -41,11 +43,13 @@ public class ScriptPage extends ServletBase {
     }else if (cmd.equals("upload")){
       final Part filePart = req.getPart("file");
       if (filePart==null || filePart.getSize()>67108864){
+        Initializer.log(filePart==null?new NullPointerException("File upload is missing."):new OutOfMemoryError("File upload is too large."));
         res.setStatus(400);
         return;
       }
       final String fileName = filePart.getSubmittedFileName();
       if (fileName==null){
+        Initializer.log(new NullPointerException("Could not retrieve name of file upload."));
         res.setStatus(400);
         return;
       }

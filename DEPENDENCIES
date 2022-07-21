@@ -17,6 +17,7 @@ xdatabase-api-addon-1.7.0
 commons-compiler-3.1.7-sources
 core-api-8.0.002
 janino-3.1.7-sources
+javax.activation-1.2.0
 spring-context-5.2.8.RELEASE
 
 Packaged Dependencies:

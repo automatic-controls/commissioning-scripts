@@ -9,7 +9,7 @@
     <title>
       Scripts
     </title>
-    <link rel="stylesheet" type="text/css" href="../../../../../../root/webapp/css/main.css"/>
+    <link rel="stylesheet" type="text/css" href="main.css"/>
     <script>
       function copyStyle(a,b){
         const styles = window.getComputedStyle(a);
@@ -78,6 +78,7 @@
         controlForm.style.display = "inline-block";
         controlButton.setAttribute("type","submit");
         controlForm.setAttribute("method","POST");
+        controlForm.setAttribute("target","_blank");
         if (active){
           controlButton.innerText = "Stop";
           controlForm.setAttribute("action","__PREFIX__/Scripts?cmd=stop&id="+id);
@@ -124,7 +125,8 @@
         td_actions.appendChild(outputLink);
         outputLink.className = "e";
         outputLink.innerText = "View Output";
-        outputLink.href = "__PREFIX__/ScriptOutputPage?ID="+id;
+        outputLink.href = "__PREFIX__/ScriptOutput?ID="+id;
+        outputLink.setAttribute("target","_blank");
         const deleteButton = document.createElement("BUTTON");
         td_actions.appendChild(deleteButton);
         deleteButton.className = "e";
@@ -198,7 +200,6 @@
           fileField.value = null;
           const req = new XMLHttpRequest();
           req.open("POST","__PREFIX__/Scripts?cmd=upload");
-          req.setRequestHeader("content-type", "multipart/form-data");
           req.onreadystatechange = function(){
             if (this.readyState===4){
               if (this.status===200){
@@ -247,7 +248,7 @@
       <a class="e" href="__PREFIX__/ArchivedTests">Archived Tests</a>
       <a class="e" href="__PREFIX__/ScheduledTests">Scheduled Tests</a>
       <a class="e" href="__PREFIX__/SemanticMappings">Semantic Mappings</a>
-      <a class="e" href="__PREFIX__/ErrorLog">Error Log</a>
+      <a class="e" href="__PREFIX__/ErrorLog" target="_blank">Error Log</a>
       <a id="documentationLink" class="e" href="__DOC_LINK__" target="_blank">Documentation</a>
       <button id="uploadScriptButton" class="e" style="border-width:2px;font-weight:bold;font-style:italic" onclick="fileField.click()">Upload Script</button>
       <input type="file" id="fileField" accept=".java" style="display:none" oninput="uploadScript();">

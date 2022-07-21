@@ -9,12 +9,12 @@
     <title>
       Error Log
     </title>
-    <link rel="stylesheet" type="text/css" href="../../../../../../root/webapp/css/main.css"/>
+    <link rel="stylesheet" type="text/css" href="main.css"/>
   </head>
   <body style="background-color:darkslategrey;">
     <div style="text-align:center">
       <h1 style="color:lightseagreen">Error Log</h1>
-      <pre style="margin:0 auto;overflow:auto;max-height:80vh;max-width:95vw;color:lightseagreen;text-align:left">
+      <pre id="logContainer" style="margin:0 auto;overflow:auto;max-height:80vh;max-width:95vw;color:lightseagreen;text-align:left">
 __LOG__
       </pre>
       <br>
@@ -24,5 +24,8 @@ __LOG__
       <a class="e" href="__PREFIX__/SemanticMappings">Semantic Mappings</a>
       <a class="e" href="__DOC_LINK__" target="_blank">Documentation</a>
     </div>
+    <script>
+      logContainer.scrollTop = logContainer.scrollHeight;
+    </script>
   </body>
 </html>
