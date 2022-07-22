@@ -2,44 +2,91 @@ import aces.webctrl.scripts.commissioning.core.*;
 import aces.webctrl.scripts.commissioning.web.*;
 import java.util.*;
 import java.util.concurrent.*;
-/** Essentially summarizes a selected {@code Mapping} by retrieving the values of all mapped nodes. */
+/**
+ * Essentially summarizes a selected {@code Mapping} by retrieving the values of all mapped nodes.
+ * Compiled at runtime by Janino. http://janino-compiler.github.io/janino/
+ */
 public class SummaryReport extends Script {
-  /** Flag which records whether the {@link #exit()} method has been called. */
+  /**
+   * Flag which records whether the {@link #exit()} method has been called.
+   * Due to multi-threading, non-final fields should be marked {@code volatile}.
+   */
   private volatile boolean exited = false;
-  /** Whether scheduled report emails should be sent as a CSV attachment instead of the default embedded HTML. */
+  /** Whether scheduled report emails should be sent as a CSV attachment instead of an embedded HTML document. */
   private volatile boolean csv = false;
   /** Stores retrieved data from {@link #exec(ResolvedTestingUnit)} to be printed at a later time by {@link #getOutput(boolean)}. */
   private final ArrayList<Tracker> trackers = new ArrayList<Tracker>();
+  /**
+   * Cumulative record of mapped tags for each control program.
+   * We use {@code ConcurrentSkipListSet} for thread safety, as opposed to an object like {@code TreeSet}, which is not thread-safe.
+   */
   private final ConcurrentSkipListSet<String> tags = new ConcurrentSkipListSet<String>();
+  /**
+   * @return a descriptive {@code String} for this script.
+   */
   @Override public String getDescription(){
     return "Generate a report which retrieves values for all mapped nodes.";
   }
+  /**
+   * Before executing this script, users are presented with a checkbox option labelled as "CSV Export to Email".
+   */
   @Override public String[] getParamNames(){
     return new String[]{"CSV Export to Email"};
   }
+  /**
+   * Handles initialization procedures.
+   */
   @Override public void init(){
+    /*
+      Retrieves whether the user selected the checkbox option specified by getParamNames().
+      Note that we must explicitly cast the return value to Boolean due to a Janino limitation on generic type arguments.
+      http://janino-compiler.github.io/janino/#limitations
+    */
     csv = (Boolean)params.getOrDefault("CSV Export to Email",false);
+    //For performance (optional), we adjust the capacity of the trackers ArrayList
     trackers.ensureCapacity(this.testsTotal);
   }
+  /**
+   * Tells the program whether emailed reports should be sent as a CSV attachment instead of an embedded HTML document.
+   */
   @Override public boolean isEmailCSV(){
     return csv;
   }
+  /**
+   * Invoked once for each control program.
+   */
   @Override public void exec(ResolvedTestingUnit x) throws Throwable {
-    tags.addAll(x.getTags());
     Tracker t = new Tracker(x);
+    tags.addAll(x.getTags());
+    /*
+      Since this method may be invoked concurrently by multiple threads, we synchronize modifications to the trackers ArrayList.
+      An alternative would be to use java.util.concurrent.locks.ReentrantReadWriteLock.
+    */
     synchronized (trackers){
       trackers.add(t);
       trackers.sort(null);
     }
   }
-  @Override public void exit() throws Throwable {
+  /**
+   * Invoked after all mapped control programs have been processed by {@link #exec(ResolvedTestingUnit)}.
+   */
+  @Override public void exit(){
     exited = true;
   }
+  /**
+   * May be invoked anytime during the lifetime of this script for users to view results.
+   * @param email specified whether the returned {@code String} will be used as an email report.
+   */
   @Override public String getOutput(boolean email) throws Throwable {
+    //We incrementally build the output String.
     final StringBuilder sb = new StringBuilder(4096);
+    /*
+      For thread-safety, we clone the tag set.
+      To understand the problem, suppose the tag set is modified after printing <th> column headers but before printing <td> cells.
+    */
     final Set<String> tags = this.tags.clone();
-    final int cols = tags.size()+1;
     if (csv && email){
+      //Print all data in the CSV format for an email.
       sb.append("Control Program");
       for (String tag:tags){
         sb.append(',');
@@ -56,22 +103,30 @@ public class SummaryReport extends Script {
         }
       }
     }else{
+      //Number of columns in the printed HTML table.
+      final int cols = tags.size()+1;
+      //Print all data in a HTML document.
+      //You may find Utility.escapeHTML(CharSequence) and Utility.escapeJS(String) useful for printing HTML documents.
       sb.append("<!DOCTYPE html>\n");
       sb.append("<html lang=\"en\">\n");
       sb.append("<head>\n");
       sb.append("<title>SummaryReport</title>\n");
       if (email){
+        //The link to main.css will not resolve when viewed at the other end of an email, so we embed the required CSS directly.
         sb.append("<style>\n");
         sb.append(ProviderCSS.getCSS());
         sb.append("\n</style>\n");
       }else{
+        //This links to the CSS document used by other parts of this addon.
         sb.append("<link rel=\"stylesheet\" type=\"text/css\" href=\"main.css\"/>\n");
+        //src\aces\webctrl\scripts\commissioning\html\main.css
       }
       sb.append("</head>\n");
       sb.append("<body>\n");
       sb.append("<div class=\"c\">\n");
       sb.append(Utility.format("<h1>SummaryReport: $0</h1>\n",Utility.escapeHTML(this.mapping.getName())));
       if (!exited){
+        //If the script has not completed, we provide a progress bar.
         final int completed = 100*this.testsCompleted.get()/this.testsTotal;
         final int started = 100*this.testsStarted.get()/this.testsTotal;
         sb.append("<div style=\"position:relative;top:0;left:15%;width:70%;height:2em\">\n");
@@ -112,6 +167,7 @@ public class SummaryReport extends Script {
       sb.append("</table>\n");
       sb.append("</div>\n");
       if (!exited){
+        //If the script has not completed, we refresh the document every second.
         sb.append("<script>\n");
         sb.append("setTimeout(()=>{window.location.reload();}, 1000);");
         sb.append("</script>\n");
@@ -122,6 +178,11 @@ public class SummaryReport extends Script {
     return sb.toString();
   }
 }
+/**
+ * Stores data about each control program.
+ * Note we implement {@code Comparable<Object>} instead of {@code Comparable<Tracker>}
+ * due to a Janino limitation on generic type parameters.
+ */
 class Tracker implements Comparable<Object> {
   public volatile String link;
   public volatile String path;
@@ -137,7 +198,10 @@ class Tracker implements Comparable<Object> {
       values.put(tag,val==null?"NULL":val);
     }
   }
-  public int compareTo(Object obj){
+  /**
+   * Used for sorting alphanumerically within each group.
+   */
+  @Override public int compareTo(Object obj){
     if (obj instanceof Tracker){
       Tracker t = (Tracker)obj;
       if (group==t.group){
