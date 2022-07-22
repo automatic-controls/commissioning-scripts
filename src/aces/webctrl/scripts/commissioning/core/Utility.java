@@ -23,6 +23,10 @@ public class Utility {
    */
   public final static String NEW_LINE = System.lineSeparator();
   private final static Pattern formatter = Pattern.compile("\\$(\\d)");
+  /**
+   * Replaces occurrences of {@code $n} in the input {@code String} with the nth indexed argument.
+   * For example, {@code format("Hello $0!", "Beautiful")=="Hello Beautiful!"}.
+   */
   public static String format(final String s, final Object... args){
     final String[] args_ = new String[args.length];
     for (int i=0;i<args.length;++i){
