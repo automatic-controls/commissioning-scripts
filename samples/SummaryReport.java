@@ -61,6 +61,7 @@ public class SummaryReport extends Script {
     /*
       Since this method may be invoked concurrently by multiple threads, we synchronize modifications to the trackers ArrayList.
       An alternative would be to use java.util.concurrent.locks.ReentrantReadWriteLock.
+      If you are new to multi-threading, you should also familiarize yourself with java.util.concurrent.atomic.AtomicInteger.
     */
     synchronized (trackers){
       trackers.add(t);
@@ -98,7 +99,7 @@ public class SummaryReport extends Script {
           sb.append(Utility.escapeCSV(t.path));
           for (String tag:tags){
             sb.append(',');
-            sb.append(Utility.escapeCSV((String)t.values.getOrDefault(tag,"NULL")));
+            sb.append(Utility.escapeCSV((String)t.values.getOrDefault(tag,"")));
           }
         }
       }
@@ -106,7 +107,7 @@ public class SummaryReport extends Script {
       //Number of columns in the printed HTML table.
       final int cols = tags.size()+1;
       //Print all data in a HTML document.
-      //You may find Utility.escapeHTML(CharSequence) and Utility.escapeJS(String) useful for printing HTML documents.
+      //You may find Utility.escapeHTML() and Utility.escapeJS() useful for printing HTML documents.
       sb.append("<!DOCTYPE html>\n");
       sb.append("<html lang=\"en\">\n");
       sb.append("<head>\n");
@@ -134,6 +135,8 @@ public class SummaryReport extends Script {
         sb.append(Utility.format("<div class=\"bar\" style=\"background-color:indigo;width:$0%\"></div>\n", started));
         sb.append(Utility.format("<div class=\"bar\" style=\"background-color:blue;width:$0%\"></div>\n", completed));
         sb.append("</div>\n");
+      }else if (this.test.isKilled()){
+        sb.append("<h3 style=\"color:crimson\">Foribly Terminated Before Natural Completion</h3>\n");
       }
       sb.append("<table>\n");
       sb.append("<thead>\n");
@@ -158,7 +161,7 @@ public class SummaryReport extends Script {
           sb.append("<tr>\n");
           sb.append(Utility.format("<td><a target=\"_blank\" href=\"$0\">$1</a></td>\n", t.link, t.path));
           for (String tag:tags){
-            sb.append("<td>").append(Utility.escapeHTML((String)t.values.getOrDefault(tag,"NULL"))).append("</td>\n");
+            sb.append("<td>").append(Utility.escapeHTML((String)t.values.getOrDefault(tag,""))).append("</td>\n");
           }
           sb.append("</tr>\n");
         }
@@ -195,7 +198,7 @@ class Tracker implements Comparable<Object> {
     String val;
     for (String tag:x.getTags()){
       val = x.getValue(tag);
-      values.put(tag,val==null?"NULL":val);
+      values.put(tag,val==null?"":val);
     }
   }
   /**

@@ -76,13 +76,14 @@
         td_actions.appendChild(controlForm);
         controlForm.className = "e";
         controlForm.style.display = "inline-block";
-        controlButton.setAttribute("type","submit");
         controlForm.setAttribute("method","POST");
         controlForm.setAttribute("target","_blank");
         if (active){
+          controlButton.setAttribute("type","submit");
           controlButton.innerText = "Stop";
           controlForm.setAttribute("action","__PREFIX__/Scripts?cmd=stop&id="+id);
         }else{
+          controlButton.setAttribute("type","button");
           controlButton.innerText = "Start";
           controlForm.setAttribute("action","__PREFIX__/Scripts?cmd=start&id="+id);
           const hiddenMapping = document.createElement("INPUT");
@@ -118,6 +119,8 @@
               }
             }
             hiddenParams.setAttribute("value",s);
+            controlForm.submit();
+            controlButton.disabled = true;
             return true;
           };
         }
@@ -219,6 +222,42 @@
           req.send(formData);
         }
       }
+      function refreshScripts(){
+        const req = new XMLHttpRequest();
+        req.open("GET","__PREFIX__/Scripts?cmd=getData");
+        req.onreadystatechange = function(){
+          if (this.readyState===4){
+            if (this.status===200){
+              try{
+                const ret = JSON.parse(this.responseText);
+                const ids = [];
+                for (const x of ret){
+                  ids.push(x.id);
+                }
+                let x = dataBody.firstElementChild;
+                while (true){
+                  if (!x){
+                    break;
+                  }else if (x.tagName==="TR" && !ids.includes(x.uniqueID)){
+                    let y = x;
+                    x = x.nextElementSibling;
+                    dataBody.removeChild(y);
+                  }else{
+                    x = x.nextElementSibling;
+                  }
+                }
+                for (const z of ret){
+                  add(z.id, z.name, z.desc, z.active, z.status, z.params);
+                }
+              }catch(e){
+                console.error(e);
+              }
+            }
+            setTimeout(refreshScripts, 3000);
+          }
+        };
+        req.send();
+      }
     </script>
   </head>
   <body>
@@ -259,6 +298,7 @@
       maxTestSelector.oninput();
       copyStyle(documentationLink,uploadScriptButton);
       //__SCRIPT__
+      refreshScripts();
       //add(0,"Test Script", "Used to test everything.", false, "Idle", {"option1":true, "option2":false});
       //add(1,"Apples and oranges", "Used to test everything.", true, "50%", {"option1":false, "option2":true, "dfskndsk":false});
     </script>

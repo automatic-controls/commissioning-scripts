@@ -111,6 +111,37 @@ public class ScriptPage extends ServletBase {
       sb.append("}}");
       res.setContentType("text/plain");
       res.getWriter().print(sb.toString());
+    }else if (cmd.equals("getData")){
+      final StringBuilder sb = new StringBuilder(1024);
+      sb.append('[');
+      boolean f = true;
+      for (Test t:Test.instances.values()){
+        if (f){
+          f = false;
+        }else{
+          sb.append(',');
+        }
+        sb.append("{\"id\":").append(t.ID);
+        sb.append(",\"name\":\"").append(Utility.escapeJSON(t.getName()));
+        sb.append("\",\"desc\":\"").append(Utility.escapeJSON(t.getDescription()));
+        sb.append("\",\"active\":").append(t.isRunning());
+        sb.append(",\"status\":\"").append(Utility.escapeJSON(t.getStatus()));
+        sb.append("\",\"params\":{");
+        boolean first = true;
+        Map<String,Boolean> lastParams = t.lastParams;
+        for (String s:t.getParamNames()){
+          if (first){
+            first = false;
+          }else{
+            sb.append(',');
+          }
+          sb.append('"').append(Utility.escapeJSON(s)).append("\":").append(lastParams!=null && lastParams.getOrDefault(s,false));
+        }
+        sb.append("}}");
+      }
+      sb.append(']');
+      res.setContentType("text/plain");
+      res.getWriter().print(sb.toString());
     }else{
       final String id = req.getParameter("id");
       if (id==null){
