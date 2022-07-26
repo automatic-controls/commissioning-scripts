@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Tester</title>
+    <link rel="stylesheet" type="text/css" href="../src/aces/webctrl/scripts/commissioning/html/main.css"/>
+    <script>
+      function scatter(parent, w, h, xData, yData){
+        if (xData.length!==yData.length){
+          console.log("Error: Data length mismatch.");
+          return undefined;
+        }
+        if (xData.length===0){
+          console.log("Data must be non-empty.");
+          return undefined;
+        }
+        w = Math.round(w);
+        h = Math.round(h);
+        const r = (w+h)/220;
+        let xMin = Math.min(0, ...xData);
+        let xMax = Math.max(0, ...xData);
+        let xRange = (xMax-xMin)/40;
+        xMin-=xRange;
+        xMax+=xRange;
+        xRange = xMax-xMin;
+        const xDecimals = Math.max(0,Math.round(2.2-Math.log10(xRange)));
+        const xFn = function(x){
+          return Math.round((x-xMin)*w/xRange);
+        };
+        const xOrigin = xFn(0);
+        let yMin = Math.min(...yData);
+        let yMax = Math.max(...yData);
+        let yRange = (yMax-yMin)/40;
+        yMin-=yRange;
+        yMax+=yRange;
+        yRange = yMax-yMin;
+        const yDecimals = Math.max(0,Math.round(2.2-Math.log10(yRange)));
+        const yFn = function(y){
+          return Math.round(h-(y-yMin)*h/yRange-1);
+        };
+        const yOrigin = yFn(0);
+        const canvas = document.createElement("CANVAS");
+        canvas.onmouseleave = function(e){
+          popup.style.display = "none";
+        };
+        canvas.onmousemove = function(e){
+          if (mouseDown){
+            canvas.onmousedown(e);
+          }else{
+            const rect = canvas.getBoundingClientRect();
+            popup.innerText = '('+((e.clientX-rect.left)*xRange/w+xMin).toFixed(xDecimals)+", "+((h-e.clientY+rect.top-1)*yRange/h+yMin).toFixed(yDecimals)+')';
+            popup.style.left = String(Math.round(e.clientX-popup.offsetWidth/2))+"px";
+            popup.style.top = String(Math.round(e.clientY+popup.offsetHeight*1.5))+"px";
+            popup.style.display = "inline-block";
+          }
+        };
+        canvas.onmouseover = canvas.onmousemove;
+        canvas.onmouseenter = canvas.onmousemove;
+        canvas.onmousedown = function(e){
+          const rect = canvas.getBoundingClientRect();
+          const x = (e.clientX-rect.left)*xRange/w+xMin;
+          const y = (h-e.clientY+rect.top-1)*yRange/h+yMin;
+          let xx,yy;
+          let rr = -1;
+          for (var i=0;i<xData.length;++i){
+            const rtmp = (x-xData[i])**2+(y-yData[i])**2;
+            if (rr===-1 || rtmp<rr){
+              rr = rtmp;
+              xx = xData[i];
+              yy = yData[i];
+            }
+          }
+          popup.innerText = '('+xx.toFixed(xDecimals)+", "+yy.toFixed(yDecimals)+')';
+          popup.style.left = String(Math.round(rect.left+xFn(xx)-popup.offsetWidth/2))+"px";
+          popup.style.top = String(Math.round(rect.top+yFn(yy)+popup.offsetHeight/2))+"px";
+          popup.style.display = "inline-block";
+        }
+        canvas.setAttribute("width", w);
+        canvas.setAttribute("height", h);
+        canvas.style.display = "block";
+        canvas.style.userSelect = "none";
+        const ctx = canvas.getContext("2d");
+        ctx.globalAlpha = 1;
+        ctx.lineWidth = 1;
+        ctx.fillStyle = "violet";
+        ctx.strokeStyle = "steelblue";
+        ctx.beginPath();
+        ctx.moveTo(xOrigin, 0);
+        ctx.lineTo(xOrigin, h);
+        ctx.moveTo(0, yOrigin);
+        ctx.lineTo(w, yOrigin);
+        ctx.stroke();
+        ctx.beginPath();
+        for (var i=0;i<xData.length;++i){
+          const x = xFn(xData[i]);
+          const y = yFn(yData[i]);
+          ctx.moveTo(x,y);
+          ctx.arc(x, y, r, 0, 2*Math.PI);
+        }
+        ctx.fill();
+        parent.appendChild(canvas);
+        return ctx;
+      }
+    </script>
+  </head>
+  <body>
+    <div id="popup" style="display:none;position:absolute;cursor:default;color:aqua"></div>
+    <div class="c">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th style="width:10vw">Graph</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Test</td>
+            <td id="test"></td>
+          </tr>
+          <tr>
+            <td>Test</td>
+            <td id="test2"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <script>
+      var mouseDown = 0;
+      document.onmousedown = function(){ 
+        ++mouseDown;
+      };
+      document.onmouseup = function(){
+        --mouseDown;
+      };
+      const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+      const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
+      scatter(test, vw/5, vh/4, [0,1,2,3,4,-10.5,7], [0,2,1,5,6,-4,-3]);
+    </script>
+  </body>
+</html>

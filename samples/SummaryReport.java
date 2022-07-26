@@ -159,7 +159,7 @@ public class SummaryReport extends Script {
             sb.append(Utility.format("<tr><th colspan=\"$0\">$1</th></tr>", cols, Utility.escapeHTML((String)this.mapping.groupNames.getOrDefault(grp, "(Deleted Group)"))));
           }
           sb.append("<tr>\n");
-          sb.append(Utility.format("<td><a target=\"_blank\" href=\"$0\">$1</a></td>\n", t.link, t.path));
+          sb.append(Utility.format("<td><a target=\"_blank\" href=\"$0\">$1</a></td>\n", t.link, Utility.escapeHTML(t.path)));
           for (String tag:tags){
             sb.append("<td>").append(Utility.escapeHTML((String)t.values.getOrDefault(tag,""))).append("</td>\n");
           }
@@ -194,7 +194,7 @@ class Tracker implements Comparable<Object> {
   public Tracker(ResolvedTestingUnit x) throws InterruptedException {
     group = x.getGroup();
     link = x.getPersistentLink();
-    path = Utility.escapeHTML(x.getDisplayPath());
+    path = x.getDisplayPath();
     String val;
     for (String tag:x.getTags()){
       val = x.getValue(tag);
