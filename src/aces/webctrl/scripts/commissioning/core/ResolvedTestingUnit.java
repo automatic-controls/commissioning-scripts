@@ -154,7 +154,9 @@ public class ResolvedTestingUnit {
     });
     if (ret.waitForResult(-1)){
       String s = ret.getResult();
-      marks.put(tag,s);
+      if (s!=null){
+        marks.put(tag,s);
+      }
       return s;
     }else{
       return null;
