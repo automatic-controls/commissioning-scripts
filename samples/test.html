@@ -4,8 +4,8 @@
     <title>Tester</title>
     <link rel="stylesheet" type="text/css" href="../src/aces/webctrl/scripts/commissioning/html/main.css"/>
     <script>
-      function scatter(parent, w, h, xData, yData){
-        if (xData.length!==yData.length){
+      function scatter(parent, w, h, xData, yData, xFit, yFit, xSuffix, ySuffix){
+        if (xData.length!==yData.length || xFit.length!==yFit.length){
           console.log("Error: Data length mismatch.");
           return undefined;
         }
@@ -13,11 +13,17 @@
           console.log("Data must be non-empty.");
           return undefined;
         }
+        if (!xSuffix){
+          xSuffix = "";
+        }
+        if (!ySuffix){
+          ySuffix = "";
+        }
         w = Math.round(w);
         h = Math.round(h);
         const r = (w+h)/220;
-        let xMin = Math.min(0, ...xData);
-        let xMax = Math.max(0, ...xData);
+        let xMin = Math.min(0, ...xData, ...xFit);
+        let xMax = Math.max(0, ...xData, ...xFit);
         let xRange = (xMax-xMin)/40;
         xMin-=xRange;
         xMax+=xRange;
@@ -27,8 +33,12 @@
           return Math.round((x-xMin)*w/xRange);
         };
         const xOrigin = xFn(0);
-        let yMin = Math.min(...yData);
-        let yMax = Math.max(...yData);
+        const xxData = [];
+        for (const x of xData){
+          xxData.push(xFn(x));
+        }
+        let yMin = Math.min(0, ...yData, ...yFit);
+        let yMax = Math.max(0, ...yData, ...yFit);
         let yRange = (yMax-yMin)/40;
         yMin-=yRange;
         yMax+=yRange;
@@ -38,6 +48,10 @@
           return Math.round(h-(y-yMin)*h/yRange-1);
         };
         const yOrigin = yFn(0);
+        const yyData = [];
+        for (const y of yData){
+          yyData.push(yFn(y));
+        }
         const canvas = document.createElement("CANVAS");
         canvas.onmouseleave = function(e){
           popup.style.display = "none";
@@ -47,7 +61,7 @@
             canvas.onmousedown(e);
           }else{
             const rect = canvas.getBoundingClientRect();
-            popup.innerText = '('+((e.clientX-rect.left)*xRange/w+xMin).toFixed(xDecimals)+", "+((h-e.clientY+rect.top-1)*yRange/h+yMin).toFixed(yDecimals)+')';
+            popup.innerText = '('+((e.clientX-rect.left)*xRange/w+xMin).toFixed(xDecimals)+xSuffix+", "+((h-e.clientY+rect.top-1)*yRange/h+yMin).toFixed(yDecimals)+ySuffix+')';
             popup.style.left = String(Math.round(e.clientX-popup.offsetWidth/2))+"px";
             popup.style.top = String(Math.round(e.clientY+popup.offsetHeight*1.5))+"px";
             popup.style.display = "inline-block";
@@ -57,31 +71,30 @@
         canvas.onmouseenter = canvas.onmousemove;
         canvas.onmousedown = function(e){
           const rect = canvas.getBoundingClientRect();
-          const x = (e.clientX-rect.left)*xRange/w+xMin;
-          const y = (h-e.clientY+rect.top-1)*yRange/h+yMin;
-          let xx,yy;
+          const x = e.clientX-rect.left;
+          const y = e.clientY-rect.top;
+          let j = 0;
           let rr = -1;
           for (var i=0;i<xData.length;++i){
-            const rtmp = (x-xData[i])**2+(y-yData[i])**2;
+            const rtmp = (x-xxData[i])**2+(y-yyData[i])**2;
             if (rr===-1 || rtmp<rr){
               rr = rtmp;
-              xx = xData[i];
-              yy = yData[i];
+              j = i;
             }
           }
-          popup.innerText = '('+xx.toFixed(xDecimals)+", "+yy.toFixed(yDecimals)+')';
-          popup.style.left = String(Math.round(rect.left+xFn(xx)-popup.offsetWidth/2))+"px";
-          popup.style.top = String(Math.round(rect.top+yFn(yy)+popup.offsetHeight/2))+"px";
+          popup.innerText = '('+xData[j].toFixed(xDecimals)+xSuffix+", "+yData[j].toFixed(yDecimals)+ySuffix+')';
+          popup.style.left = String(Math.round(rect.left+xxData[j]-popup.offsetWidth/2))+"px";
+          popup.style.top = String(Math.round(rect.top+yyData[j]+popup.offsetHeight/2))+"px";
           popup.style.display = "inline-block";
         }
         canvas.setAttribute("width", w);
         canvas.setAttribute("height", h);
         canvas.style.display = "block";
         canvas.style.userSelect = "none";
+        canvas.style.backgroundColor = "black";
         const ctx = canvas.getContext("2d");
         ctx.globalAlpha = 1;
         ctx.lineWidth = 1;
-        ctx.fillStyle = "violet";
         ctx.strokeStyle = "steelblue";
         ctx.beginPath();
         ctx.moveTo(xOrigin, 0);
@@ -89,10 +102,24 @@
         ctx.moveTo(0, yOrigin);
         ctx.lineTo(w, yOrigin);
         ctx.stroke();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = "forestgreen";
+        ctx.beginPath();
+        for (var i=0;i<xFit.length;++i){
+          const x = xData===xFit?xxData[i]:xFn(xFit[i]);
+          const y = yData===yFit?yyData[i]:yFn(yFit[i]);
+          if (i===0){
+            ctx.moveTo(x,y);
+          }else{
+            ctx.lineTo(x,y);
+          }
+        }
+        ctx.stroke();
+        ctx.fillStyle = "violet";
         ctx.beginPath();
         for (var i=0;i<xData.length;++i){
-          const x = xFn(xData[i]);
-          const y = yFn(yData[i]);
+          const x = xxData[i];
+          const y = yyData[i];
           ctx.moveTo(x,y);
           ctx.arc(x, y, r, 0, 2*Math.PI);
         }
@@ -100,29 +127,110 @@
         parent.appendChild(canvas);
         return ctx;
       }
+      function draw(parent, data){
+        const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0)/5;
+        const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0)/4;
+        for (const x of data){
+          const table = document.createElement("TABLE");
+          const thead = document.createElement("THEAD");
+          const tbody = document.createElement("TBODY");
+          table.appendChild(thead);
+          table.appendChild(tbody);
+          const trTitle = document.createElement("TR");
+          const trHeaders = document.createElement("TR");
+          thead.appendChild(trTitle);
+          thead.appendChild(trHeaders);
+          const tdTitle = document.createElement("TD");
+          trTitle.appendChild(tdTitle);
+          tdTitle.style.fontSize = "150%";
+          tdTitle.style.fontWeight = "bold";
+          tdTitle.style.color = "aquamarine";
+          tdTitle.innerText = x["name"];
+          tdTitle.setAttribute("colspan","7");
+          const thPath = document.createElement("TH");
+          const thStart = document.createElement("TH");
+          const thStop = document.createElement("TH");
+          const thFanStart = document.createElement("TH");
+          const thFanStop = document.createElement("TH");
+          const thDamper = document.createElement("TH");
+          const thValve = document.createElement("TH");
+          trHeaders.appendChild(thPath);
+          trHeaders.appendChild(thStart);
+          trHeaders.appendChild(thStop);
+          trHeaders.appendChild(thFanStart);
+          trHeaders.appendChild(thFanStop);
+          trHeaders.appendChild(thDamper);
+          trHeaders.appendChild(thValve);
+          thPath.innerText = "Location";
+          thStart.innerText = "Start Time";
+          thStop.innerText = "Stop Time";
+          thFanStart.innerText = "Fan Start Command";
+          thFanStop.innerText = "Fan Stop Command";
+          thDamper.innerText = "Airflow (CFM) vs. Damper Position (%)";
+          thValve.innerText = "HW Valve Temperature Differential Over Time";
+          for (const y of x["equipment"]){
+            const tr = document.createElement("TR");
+            const tdPath = document.createElement("TD");
+            const a = document.createElement("A");
+            a.innerText = y["path"];
+            a.href = y["link"];
+            a.setAttribute("target","_blank");
+            tdPath.appendChild(a);
+            tr.appendChild(tdPath);
+            const tdStart = document.createElement("TD");
+            tdStart.innerText = y["start"];
+            tr.appendChild(tdStart);
+            const tdStop = document.createElement("TD");
+            tdStop.innerText = y["stop"];
+            tr.appendChild(tdStop);
+            const fan = y["fan"];
+            if (!fan || fan["error"]){
+              const tdFan = document.createElement("TD");
+              tdFan.setAttribute("colspan","2");
+              if (fan){
+                tdFan.innerText = "Error";
+              }
+              tr.appendChild(tdFan);
+            }else{
+              const tdFanStart = document.createElement("TD");
+              const tdFanStop = document.createElement("TD");
+              tdFanStart.innerText = fan["start"]?"Success":"Failure";
+              tdFanStop.innerText = fan["stop"]?"Success":"Failure";
+              tr.appendChild(tdFanStart);
+              tr.appendChild(tdFanStop);
+            }
+            const damper = y["damper"];
+            const tdDamper = document.createElement("TD");
+            tr.appendChild(tdDamper);
+            if (!damper || damper["error"]){
+              if (damper){
+                tdDamper.innerText = "Error";
+              }
+            }else{
+              scatter(tdDamper, vw, vh, damper["x"], damper["y"], damper["xFit"], damper["yFit"], "%", " cfm");
+            }
+            const valve = y["valve"];
+            const tdValve = document.createElement("TD");
+            tr.appendChild(tdValve);
+            if (!valve || valve["error"]){
+              if (valve){
+                tdValve.innerText = "Error";
+              }
+            }else{
+              scatter(tdValve, vw, vh, valve["x"], valve["y"], valve["x"], valve["y"], " min", " \u{00B0}F");
+            }
+            tbody.appendChild(tr);
+          }
+          parent.appendChild(document.createElement("BR"));
+          parent.appendChild(table);
+        }
+      }
     </script>
   </head>
   <body>
-    <div id="popup" style="display:none;position:absolute;cursor:default;color:aqua"></div>
-    <div class="c">
-      <table>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th style="width:10vw">Graph</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Test</td>
-            <td id="test"></td>
-          </tr>
-          <tr>
-            <td>Test</td>
-            <td id="test2"></td>
-          </tr>
-        </tbody>
-      </table>
+    <div id="popup" style="display:none;position:absolute;cursor:default;color:aqua;pointer-events:none"></div>
+    <div id="mainDiv" class="c">
+      <h1>VAV Box Report</h1>
     </div>
     <script>
       var mouseDown = 0;
@@ -132,9 +240,87 @@
       document.onmouseup = function(){
         --mouseDown;
       };
-      const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
-      const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
-      scatter(test, vw/5, vh/4, [0,1,2,3,4,-10.5,7], [0,2,1,5,6,-4,-3]);
+      draw(mainDiv,
+        [
+          {
+            "name":"Test 1",
+            "equipment":[
+              {
+                "path":"ACES / Main Floor / VAV-8",
+                "link":"@{DBID:1000}",
+                "start":"Today 1:00PM",
+                "stop":"Today 2:00PM",
+                "fan":{
+                  "error":false,
+                  "start":true,
+                  "stop":true
+                },
+                "damper":{
+                  "error":false,
+                  "x":[0,1,2,3,4,-10.5,7],
+                  "y":[0,2,1,5,6,-4,-3],
+                  "xFit":[-10,-7,-5,-2,1,6,8],
+                  "yFit":[10,-3,5,1,7,9,2]
+                },
+                "valve":{
+                  "error":false,
+                  "x":[0,0.5,1,1.5,2,3,4,5,6,7,8,9,10],
+                  "y":[0,0.25,1,2.25,4,9,16,25,36,49,64,81,100]
+                }
+              },
+              {
+                "path":"ACES / Main Floor / VAV-8",
+                "link":"@{DBID:1000}",
+                "start":"Today 1:00PM",
+                "stop":"Today 2:00PM",
+                "fan":{
+                  "error":true
+                },
+                "damper":{
+                  "error":true
+                },
+                "valve":{
+                  "error":true
+                }
+              }
+            ]
+          },
+          {
+            "name":"Test 1",
+            "equipment":[
+              {
+                "path":"ACES / Main Floor / VAV-8",
+                "link":"@{DBID:1000}",
+                "start":"Today 1:00PM",
+                "stop":"Today 2:00PM"
+              },
+              {
+                "path":"ACES / Main Floor / VAV-8",
+                "link":"@{DBID:1000}",
+                "start":"Today 1:00PM",
+                "stop":"Today 2:00PM",
+                "fan":{
+                  "error":false,
+                  "start":true,
+                  "stop":true
+                },
+                "damper":{
+                  "error":false,
+                  "x":[0,1,2,3,4,-10.5,7],
+                  "y":[0,2,1,5,6,-4,-3],
+                  "xFit":[-10,-7,-5,-2,1,6,8],
+                  "yFit":[10,-3,5,1,7,9,2]
+                },
+                "valve":{
+                  "error":false,
+                  "x":[0,0.5,1,1.5,2,3,4,5,6,7,8,9,10],
+                  "y":[0,0.25,1,2.25,4,9,16,25,36,49,64,81,100]
+                }
+              }
+            ]
+          }
+        ]
+      );
     </script>
   </body>
 </html>
