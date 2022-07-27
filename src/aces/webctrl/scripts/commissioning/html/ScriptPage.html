@@ -24,6 +24,25 @@
           name = name.substring(0, name.length-5);
         }
         const tr = document.createElement("TR");
+        tr.uniqueID = id;
+        tr.params = params;
+        let x = dataBody.firstElementChild;
+        while (true){
+          if (!x){
+            break;
+          }else if (x.tagName==="TR" && tr.uniqueID===x.uniqueID){
+            for (const [key,value] of Object.entries(x.params)){
+              if (params[key]!==undefined){
+                params[key] = value;
+              }
+            }
+            let y = x;
+            x = x.nextElementSibling;
+            dataBody.removeChild(y);
+          }else{
+            x = x.nextElementSibling;
+          }
+        }
         const td_name = document.createElement("TD");
         const td_desc = document.createElement("TD");
         const td_active = document.createElement("TD");
@@ -52,6 +71,7 @@
           const f = ()=>{
             checker.checked = !checker.checked;
             span.checked = checker.checked;
+            params[key] = checker.checked;
             if (checker.checked){
               div.style.backgroundColor = "green";
               div.style.fontWeight = "bold";
@@ -166,19 +186,6 @@
         downloadLink.style.fontStyle = "italic";
         downloadLink.href = "__PREFIX__/Scripts?cmd=download&id="+id;
         tr.sortID = name;
-        tr.uniqueID = id;
-        let x = dataBody.firstElementChild;
-        while (true){
-          if (!x){
-            break;
-          }else if (x.tagName==="TR" && tr.uniqueID===x.uniqueID){
-            let y = x;
-            x = x.nextElementSibling;
-            dataBody.removeChild(y);
-          }else{
-            x = x.nextElementSibling;
-          }
-        }
         x = dataBody.firstElementChild;
         while (true){
           if (!x){

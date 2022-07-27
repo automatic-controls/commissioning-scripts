@@ -370,7 +370,7 @@ public class Test {
                       if (cachedOutput!=null){
                         at.save(cachedOutput);
                       }
-                      if (schedule!=null){
+                      if (schedule!=null && schedule.emails.size()>0){
                         String email = getScriptOutputSafe(true);
                         if (email!=null){
                           schedule.onComplete(ExpansionUtils.nullifyLinks(email),csv);
