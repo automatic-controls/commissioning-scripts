@@ -30,6 +30,10 @@ public class ResolvedTestingUnit {
   private final AtomicBoolean started = new AtomicBoolean();
   /** Indicates whether this test unit has been completed. */
   private volatile boolean completed = false;
+  /** Specifies how many attempts should be made to read and write node values. */
+  public volatile int tries = 3;
+  /** Specifies how long to wait after failing to read or write a node value. */
+  public volatile long failedAttemptTimeout = 300L;
   /**
    * Constructs a resolved testing unit based on a few relevant pieces of information.
    * @param tu is the testing unit to resolve.
@@ -105,29 +109,38 @@ public class ResolvedTestingUnit {
    * @return {@code true} if the semantic tag mapping exists and the value was set successfully; {@code false} otherwise.
    */
   public boolean setValue(final String tag, final Object value) throws InterruptedException {
-    return setValue(tags.get(tag),value);
+    return setValue(tags.get(tag),value,tries,failedAttemptTimeout);
   }
   /**
    * Sets the value of the given node.
    * @return {@code true} if the node value was set successfully; {@code false} otherwise.
    */
-  public static boolean setValue(final Node n, final Object value) throws InterruptedException {
+  public static boolean setValue(final Node n, final Object value, final int tries, final long failedAttemptTimeout) throws InterruptedException {
     if (n==null){
       return false;
     }
     final String str = String.valueOf(value);
     final Result<Boolean> ret = new Result<Boolean>();
-    Initializer.enqueue(new WriteAction(){
-      public void execute(WritableSystemAccess sys){
-        try{
-          n.setValue(str);
-          ret.setResult(true);
-        }catch(Throwable t){
-          ret.setResult(false);
-        }
+    for (int i=0;i<tries;++i){
+      if (i!=0){
+        Thread.sleep(failedAttemptTimeout);
+        ret.reset();
       }
-    });
-    return ret.waitForResult(-1) && ret.getResult();
+      Initializer.enqueue(new WriteAction(){
+        public void execute(WritableSystemAccess sys){
+          try{
+            n.setValue(str);
+            ret.setResult(true);
+          }catch(Throwable t){
+            ret.setResult(false);
+          }
+        }
+      });
+      if (ret.waitForResult(-1) && ret.getResult()){
+        return true;
+      }
+    }
+    return false;
   }
   /**
    * Sets the value of the given node and marks the previous value internally.
@@ -141,26 +154,32 @@ public class ResolvedTestingUnit {
     }
     final String str = String.valueOf(value);
     final Result<String> ret = new Result<String>();
-    Initializer.enqueue(new WriteAction(){
-      public void execute(WritableSystemAccess sys){
-        try{
-          String val = n.getValue();
-          n.setValue(str);
-          ret.setResult(val);
-        }catch(Throwable t){
-          ret.setResult(null);
+    final Container<String> val = new Container<String>(null);
+    String s;
+    for (int i=0;i<tries;++i){
+      if (i!=0){
+        Thread.sleep(failedAttemptTimeout);
+        ret.reset();
+      }
+      Initializer.enqueue(new WriteAction(){
+        public void execute(WritableSystemAccess sys){
+          try{
+            if (val.x==null){
+              val.x = n.getValue();
+            }
+            n.setValue(str);
+            ret.setResult(val.x);
+          }catch(Throwable t){
+            ret.setResult(null);
+          }
         }
-      }
-    });
-    if (ret.waitForResult(-1)){
-      String s = ret.getResult();
-      if (s!=null){
+      });
+      if (ret.waitForResult(-1) && (s=ret.getResult())!=null){
         marks.put(tag,s);
+        return s;
       }
-      return s;
-    }else{
-      return null;
     }
+    return null;
   }
   /**
    * Gets the value of a node and internally records it.
@@ -180,51 +199,72 @@ public class ResolvedTestingUnit {
    * @return the value of the node mapped with the given semantic tag, or {@code null} if the semantic tag mapping does not exist or the value cannot be retrieved for any other reason.
    */
   public String getValue(String tag) throws InterruptedException {
-    return getValue(tags.get(tag));
+    return getValue(tags.get(tag), tries, failedAttemptTimeout);
   }
   /**
    * @return the value of the node, or {@code null} if the value could not be retrieved.
    */
-  public static String getValue(Node n) throws InterruptedException {
+  public static String getValue(Node n, final int tries, final long failedAttemptTimeout) throws InterruptedException {
     if (n==null){
       return null;
     }
     final Result<String> ret = new Result<String>();
-    Initializer.enqueue(new ReadAction(){
-      public void execute(SystemAccess sys){
-        try{
-          ret.setResult(n.getValue());
-        }catch(Throwable t){
-          ret.setResult(null);
-        }
+    String s;
+    for (int i=0;i<tries;++i){
+      if (i!=0){
+        Thread.sleep(failedAttemptTimeout);
+        ret.reset();
       }
-    });
-    return ret.waitForResult(-1)?ret.getResult():null;
+      Initializer.enqueue(new ReadAction(){
+        public void execute(SystemAccess sys){
+          try{
+            ret.setResult(n.getValue());
+          }catch(Throwable t){
+            ret.setResult(null);
+          }
+        }
+      });
+      if (ret.waitForResult(-1) && (s=ret.getResult())!=null){
+        return s;
+      }
+    }
+    return null;
   }
   /**
    * @return the display value of the node mapped with the given semantic tag, or {@code null} if the semantic tag mapping does not exist or the value cannot be retrieved for any other reason.
    */
   public String getDisplayValue(String tag) throws InterruptedException {
-    return getDisplayValue(tags.get(tag));
+    return getDisplayValue(tags.get(tag),tries,failedAttemptTimeout);
   }
   /**
    * @return the display value of the node, or {@code null} if the value could not be retrieved.
    */
-  public static String getDisplayValue(Node n) throws InterruptedException {
+  public static String getDisplayValue(Node n, final int tries, final long failedAttemptTimeout) throws InterruptedException {
     if (n==null){
       return null;
     }
     final Result<String> ret = new Result<String>();
-    Initializer.enqueue(new ReadAction(){
-      public void execute(SystemAccess sys){
-        try{
-          ret.setResult(n.getDisplayValue());
-        }catch(Throwable t){
-          ret.setResult(null);
-        }
+    String s;
+    for (int i=0;i<tries;++i){
+      if (i!=0){
+        Thread.sleep(failedAttemptTimeout);
+        ret.reset();
       }
-    });
-    return ret.waitForResult(-1)?ret.getResult():null;
+      Initializer.enqueue(new ReadAction(){
+        public void execute(SystemAccess sys){
+          try{
+            ret.setResult(n.getDisplayValue());
+          }catch(Throwable t){
+            ret.setResult(null);
+          }
+        }
+      });
+      if (ret.waitForResult(-1) && (s=ret.getResult())!=null){
+        return s;
+      }
+    }
+    return null;
+
   }
   /**
    * Resets the node corresponding to the given semantic tag per the last marked value.
@@ -234,36 +274,45 @@ public class ResolvedTestingUnit {
    */
   public boolean reset(String tag) throws InterruptedException {
     if (tag==null){
-      int s = marks.size();
-      if (s==0){
-        return true;
-      }
-      final ArrayList<Result<Boolean>> rets = new ArrayList<Result<Boolean>>(s);
-      String value;
-      for (Map.Entry<String,Node> entry:tags.entrySet()){
-        final String str = entry.getKey();
-        value = marks.remove(str);
-        if (value!=null){
-          final Node n = entry.getValue();
-          final Result<Boolean> ret = new Result<Boolean>();
-          rets.add(ret);
-          Initializer.enqueue(new WriteAction(){
-            public void execute(WritableSystemAccess sys){
-              try{
-                n.setValue(str);
-                ret.setResult(true);
-              }catch(Throwable t){
-                ret.setResult(false);
+      int s;
+      for (int i=0;i<tries;++i){
+        if (i!=0){
+          Thread.sleep(failedAttemptTimeout);
+        }
+        s = marks.size();
+        if (s==0){
+          return true;
+        }
+        final ArrayList<Result<Boolean>> rets = new ArrayList<Result<Boolean>>(s);
+        for (Map.Entry<String,Node> entry:tags.entrySet()){
+          final String str = entry.getKey();
+          final String value = marks.get(str);
+          if (value!=null){
+            final Node n = entry.getValue();
+            final Result<Boolean> ret = new Result<Boolean>();
+            rets.add(ret);
+            Initializer.enqueue(new WriteAction(){
+              public void execute(WritableSystemAccess sys){
+                try{
+                  n.setValue(value);
+                  marks.remove(str);
+                  ret.setResult(true);
+                }catch(Throwable t){
+                  ret.setResult(false);
+                }
               }
-            }
-          });
+            });
+          }
+        }
+        boolean ret = true;
+        for (Result<Boolean> r:rets){
+          ret&=r.waitForResult(-1)&&r.getResult();
+        }
+        if (ret){
+          return true;
         }
       }
-      boolean ret = true;
-      for (Result<Boolean> r:rets){
-        ret&=r.waitForResult(-1)&&r.getResult();
-      }
-      return ret;
+      return false;
     }else{
       String value = marks.remove(tag);
       if (value==null){
