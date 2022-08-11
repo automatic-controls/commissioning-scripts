@@ -182,6 +182,18 @@ public class ResolvedTestingUnit {
     return null;
   }
   /**
+   * Sets the value of the given node and marks the previous value internally if there does not already exist a recorded mark for {@code tag}.
+   * Upon test completion, all marked nodes will have their values reset to marked values. See {@link #reset(String)}.
+   * @return {@code true} if the node value was set successfully; {@code false} otherwise.
+   */
+  public boolean setValueAutoMark(final String tag, final Object val) throws InterruptedException {
+    if (marks.containsKey(tag)){
+      return setValue(tag,val);
+    }else{
+      return markAndSetValue(tag,val)!=null;
+    }
+  }
+  /**
    * Gets the value of a node and internally records it.
    * Upon test completion, all marked nodes will have their values reset to marked values. See {@link #reset(String)}.
    * @return the value of the node mapped with the given semantic tag, or {@code null} if the semantic tag mapping does not exist or the value cannot be retrieved for any other reason.

@@ -32,12 +32,24 @@ public class Utility {
     for (int i=0;i<args.length;++i){
       args_[i] = args[i]==null?"":Matcher.quoteReplacement(args[i].toString());
     }
-    return formatter.matcher(s).replaceAll(new java.util.function.Function<MatchResult,String>(){
+    return replaceAll(s, formatter, new java.util.function.Function<MatchResult,String>(){
       public String apply(MatchResult m){
         int i = Integer.parseInt(m.group(1));
         return i<args.length?args_[i]:"";
       }
     });
+  }
+  /**
+   * Meant to be used as an alternative to {@link Matcher#replaceAll(java.util.function.Function)} for compatibility with WebCTRL 7.0.
+   */
+  public static String replaceAll(String s, Pattern p, java.util.function.Function<MatchResult,String> replacer){
+    final Matcher m = p.matcher(s);
+    final StringBuffer sb = new StringBuffer(s.length());
+    while (m.find()){
+      m.appendReplacement(sb, replacer.apply(m));
+    }
+    m.appendTail(sb);
+    return sb.toString();
   }
   /**
    * @param time should be some value returned by {@code System.currentTimeMillis()}.

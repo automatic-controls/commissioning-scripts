@@ -14,7 +14,7 @@ public class ScriptOutputPage extends ServletBase {
         String err = "Requested test does not exist.";
         res.sendError(404, err);
         Initializer.log(new NullPointerException(err));
-      }else{
+      }else if (req.getParameter("AJAX")==null){
         String output = t.getOutput();
         if (output==null){
           String err = "Output cache is empty.";
@@ -24,6 +24,8 @@ public class ScriptOutputPage extends ServletBase {
           res.setContentType("text/html");
           res.getWriter().print(ExpansionUtils.expandLinks(output, req));
         }
+      }else{
+        t.submitAJAX(req,res);
       }
     }
   }

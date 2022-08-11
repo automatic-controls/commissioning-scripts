@@ -1,4 +1,5 @@
 package aces.webctrl.scripts.commissioning.core;
+import javax.servlet.http.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 /**
@@ -128,6 +129,13 @@ public class Script {
   public String getOutput(boolean email) throws Throwable {
     return null;
   }
+  /**
+   * This method may be overridden to provide asynchronous updates to the output of actively executing scripts.
+   * AJAX requests submitted to {@code window.location.href+"&AJAX"} from within the HTML output will be handled by this method.
+   * Response status errors 400, 401, 404 and 500 may be expected in addition to whatever response is provided here.
+   * When a script becomes inactive, this method will no longer be invoked, and you should expect to receive a status of 404.
+   */
+  public void updateAJAX(HttpServletRequest req, HttpServletResponse res) throws Throwable {}
   /**
    * @return whether emailed reports should be sent as a CSV attachment.
    */

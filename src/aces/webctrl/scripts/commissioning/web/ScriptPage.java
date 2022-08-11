@@ -1,6 +1,8 @@
 package aces.webctrl.scripts.commissioning.web;
 import aces.webctrl.scripts.commissioning.core.*;
 import com.controlj.green.addonsupport.access.*;
+import org.apache.tomcat.util.http.parser.HttpParser;
+import org.apache.tomcat.util.http.fileupload.ParameterParser;
 import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.http.*;
 import java.util.*;
@@ -47,7 +49,7 @@ public class ScriptPage extends ServletBase {
         res.setStatus(400);
         return;
       }
-      final String fileName = filePart.getSubmittedFileName();
+      final String fileName = getSubmittedFileName(filePart);
       if (fileName==null){
         Initializer.log(new NullPointerException("Could not retrieve name of file upload."));
         res.setStatus(400);
@@ -215,5 +217,39 @@ public class ScriptPage extends ServletBase {
         }
       }
     }
+  }
+  private static String getSubmittedFileName(Part p) {
+    String fileName = null;
+    String cd = p.getHeader("Content-Disposition");
+    if (cd != null) {
+        String cdl = cd.toLowerCase(Locale.ENGLISH);
+        if (cdl.startsWith("form-data") || cdl.startsWith("attachment")) {
+            ParameterParser paramParser = new ParameterParser();
+            paramParser.setLowerCaseNames(true);
+            // Parameter parser can handle null input
+            Map<String,String> params = paramParser.parse(cd, ';');
+            if (params.containsKey("filename")) {
+                fileName = params.get("filename");
+                // The parser will remove surrounding '"' but will not
+                // unquote any \x sequences.
+                if (fileName != null) {
+                    // RFC 6266. This is either a token or a quoted-string
+                    if (fileName.indexOf('\\') > -1) {
+                        // This is a quoted-string
+                        fileName = HttpParser.unquote(fileName.trim());
+                    } else {
+                        // This is a token
+                        fileName = fileName.trim();
+                    }
+                } else {
+                    // Even if there is no value, the parameter is present,
+                    // so we return an empty file name rather than no file
+                    // name.
+                    fileName = "";
+                }
+            }
+        }
+    }
+    return fileName;
   }
 }

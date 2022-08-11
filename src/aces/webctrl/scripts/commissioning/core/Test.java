@@ -8,6 +8,7 @@ import java.util.function.IntUnaryOperator;
 import java.nio.file.*;
 import java.io.*;
 import java.security.*;
+import javax.servlet.http.*;
 public class Test {
   public final static ConcurrentSkipListMap<Integer,Test> instances = new ConcurrentSkipListMap<Integer,Test>();
   private final static AtomicInteger nextID = new AtomicInteger();
@@ -80,6 +81,16 @@ public class Test {
     }catch(Throwable t){
       Initializer.log(t);
       return Utility.getStackTrace(t);
+    }
+  }
+  public void submitAJAX(HttpServletRequest req, HttpServletResponse res) throws Throwable {
+    final Script scr = script;
+    if (scr==null){
+      String err = "AJAX request submitted to inactive script.";
+      res.sendError(404, err);
+      //Initializer.log(new NullPointerException(err));
+    }else{
+      scr.updateAJAX(req,res);
     }
   }
   /**

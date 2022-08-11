@@ -14,9 +14,13 @@ public class ArchiveOutputPage extends ServletBase {
         String err = "Requested archived test does not exist.";
         res.sendError(404, err);
         Initializer.log(new NullPointerException(err));
-      }else{
+      }else if (req.getParameter("AJAX")==null){
         res.setContentType("text/html");
         res.getWriter().print(ExpansionUtils.expandLinks(at.load(), req));
+      }else{
+        String err = "Cannot submit AJAX request to archived tests.";
+        res.sendError(404, err);
+        Initializer.log(new NullPointerException(err));
       }
     }
   }

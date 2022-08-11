@@ -111,11 +111,11 @@
         <br>
         <div class="divGrouping">
           <label for="maxTestSelector" id="maxTestSelectorLabel"></label>
-          <input name="maxTests" type="range" style="width:20vw" min="0" max="100" step="1" value="__MAX_TESTS__" id="maxTestSelector" oninput="maxTestSelectorLabel.innerText='Maximum Active Tests Per Group ('+maxTestSelector.value+'%):';registerChange()">
+          <input name="maxTests" type="range" style="width:20vw" min="0" max="100" step="1" value="__MAX_TESTS__" id="maxTestSelector" oninput="maxTestSelectorLabel.innerText='Max. Active Tests Per Group ('+maxTestSelector.value+'%):';registerChange()">
         </div>
         <div class="divGrouping">
           <label for="threadSelector" id="threadSelectorLabel"></label>
-          <input name="threads" type="range" style="width:20vw" min="1" max="64" step="1" value="__THREADS__" id="threadSelector" oninput="threadSelectorLabel.innerText='Allotted Threads ('+threadSelector.value+'):';registerChange()">
+          <input name="threads" type="range" style="width:20vw" min="1" max="64" step="1" value="__THREADS__" id="threadSelector" oninput="threadSelectorLabel.innerText='Total Max. Active Tests ('+threadSelector.value+'):';registerChange()">
         </div>
         <br><br>
         <div class="divGrouping">

@@ -12,7 +12,7 @@ public class ExpansionUtils {
     if (req==null){
       return nullifyLinks(s);
     }
-    return PERSISTENT_LINK.matcher(s).replaceAll(new Function<MatchResult,String>(){
+    return Utility.replaceAll(s, PERSISTENT_LINK, new Function<MatchResult,String>(){
       public String apply(MatchResult m){
         try{
           return Matcher.quoteReplacement(Utility.escapeHTML(Link.createLink(UITree.GEO, m.group(1)).getURL(req)));
