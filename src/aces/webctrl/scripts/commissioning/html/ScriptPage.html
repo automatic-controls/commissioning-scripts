@@ -56,7 +56,7 @@
         tr.appendChild(td_params);
         tr.appendChild(td_actions);
         td_name.innerText = name;
-        td_desc.innerText = desc;
+        td_desc.innerHTML = desc;
         td_active.innerText = active?"Yes":"No";
         td_status.innerText = status;
         for (const [key,value] of Object.entries(params)){

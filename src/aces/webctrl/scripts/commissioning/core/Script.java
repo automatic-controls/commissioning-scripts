@@ -27,13 +27,13 @@ import java.util.concurrent.atomic.*;
  *   s.exec(rtu);
  * &#125;
  * s.exit();
- * s.isEmailCSV();
- * ArchivedTest.save(s.getOutput());
+ * ArchivedTest.save(s.getOutput(false));
+ * ScheduledTest.onComplete(s.getOutput(true), s.isEmailCSV());
  * s = null;
  * }</pre>
  * The {@code for} loop over the {@code ResolvedTestingUnit} collection is shown for illustrative purposes only.
  * In actuality, multiple threads will concurrently loop and invoke {@link #exec(ResolvedTestingUnit)} simutaneously.
- * Also, {@link #getOutput()} may be concurrently invoked at any time during a {@code Script} object's lifetime.
+ * Also, {@link #getOutput(boolean) getOutput(false)} and {@link #updateAJAX(HttpServletRequest, HttpServletResponse)} may be concurrently invoked at any time during a {@code Script} object's lifetime.
  * Refer to individual field and method Javadocs for more information.
  */
 public class Script {
@@ -109,6 +109,7 @@ public class Script {
   }
   /**
    * The information returned by this method will be displayed to users when viewing scripts.
+   * You may include HTML tags in the returned {@code String}.
    * @return some descriptive detail for this script.
    */
   public String getDescription() throws Throwable {

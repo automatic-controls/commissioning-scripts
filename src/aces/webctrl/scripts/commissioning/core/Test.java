@@ -369,12 +369,6 @@ public class Test {
                       status = "Termination error occurred.";
                     }
                     try{
-                      boolean csv = false;
-                      try{
-                        csv = script.isEmailCSV();
-                      }catch(Throwable t){
-                        Initializer.log(t);
-                      }
                       cachedOutput = getScriptOutputSafe(false);
                       final ArchivedTest at = new ArchivedTest(name, operator, startTime, System.currentTimeMillis(), threads.length, mtest, params);
                       threads = null;
@@ -384,6 +378,12 @@ public class Test {
                       if (schedule!=null && schedule.emails.size()>0){
                         String email = getScriptOutputSafe(true);
                         if (email!=null){
+                          boolean csv = false;
+                          try{
+                            csv = script.isEmailCSV();
+                          }catch(Throwable t){
+                            Initializer.log(t);
+                          }
                           schedule.onComplete(ExpansionUtils.nullifyLinks(email),csv);
                         }
                       }
@@ -460,7 +460,7 @@ public class Test {
           return s;
         }catch(Throwable t){}
       }
-      description = "Could not locate implementation of "+Script.class.getName()+" with no-argument constructor.";
+      description = "Could not locate implementation of "+Utility.escapeHTML(Script.class.getName())+" with no-argument constructor.";
       paramNames = null;
       return null;
     }catch(Throwable t){
