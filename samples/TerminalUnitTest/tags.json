@@ -1,0 +1,23 @@
+{
+  "airflow": "air_flow/flow_tab/actual_flow",
+  "airflow_lock_flag": "air_flow/flow_tab/lock_flags/flowsetp",
+  "airflow_lock_value": "air_flow/flow_tab/flowsetp_lock",
+  "airflow_max_cool": "air_flow/flow_tab/max_cool",
+  "airflow_max_heat": "air_flow/flow_tab/max_heat",
+  "damper_lock_flag": "air_flow/flow_tab/lock_flags/damper",
+  "damper_lock_value": "air_flow/flow_tab/damper_lock",
+  "damper_position": "air_flow/flow_tab/damper_position",
+  "eat": "ahu_[ds]at/present_value",
+  "heating_AO_lock_flag": "(?:hwv|scr_heat_ao)/locked",
+  "heating_AO_lock_value": "(?:hwv|scr_heat_ao)/locked_value",
+  "heating_AO_position": "(?:hwv|scr_heat_ao)/present_value",
+  "lat": "dat/present_value",
+  "pump_cmd_lock_flag": "comp1?/locked",
+  "pump_cmd_lock_value": "comp1?/locked_value",
+  "pump_rev_lock_flag": "rv1?/locked",
+  "pump_rev_lock_value": "rv1?/locked_value",
+  "pump_status": "comp1?st/present_value",
+  "sfss_lock_flag": "sfss/locked",
+  "sfss_lock_value": "sfss/locked_value",
+  "sfst": "sfst/present_value"
+}

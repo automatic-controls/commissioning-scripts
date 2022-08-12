@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <title>Tester</title>
-    <link rel="stylesheet" type="text/css" href="../src/aces/webctrl/scripts/commissioning/html/main.css"/>
+    <link rel="stylesheet" type="text/css" href="../../src/aces/webctrl/scripts/commissioning/html/main.css"/>
     <script>
       function scatter(w, h, xData, yData, xFit, yFit, xSuffix, ySuffix, success){
         if (xData.length!==yData.length || xFit.length!==yFit.length){
@@ -410,6 +410,11 @@
           }
         }
       }
+      function prepareDataExport(){
+        if (exportDataButton.getAttribute("href").length===1 && DATA){
+          exportDataButton.setAttribute("href", "data:text/plain;charset=utf-8,"+encodeURIComponent(JSON.stringify(DATA, undefined, 2)));
+        }
+      }
     </script>
   </head>
   <body>
@@ -418,6 +423,7 @@
       <h1>Terminal Unit Report</h1>
       <button class="e" onclick="reloadData()">Reevaluate Data Tolerances</button>
       <button class="e" onclick="toggleGraphs()">Toggle Graph Visibility</button>
+      <a class="e" id="exportDataButton" href="#" download="data.json" onclick="prepareDataExport()">Export Data</a>
       <br>
       <div class="divGrouping">
         <input type="checkbox" id="useMaxCooling">

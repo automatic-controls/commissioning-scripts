@@ -13,7 +13,7 @@ public class TerminalUnitTest extends Script {
   private volatile boolean testHeating = false;
   private volatile boolean initialized = false;
   @Override public String getDescription(){
-    return "Evaluate performance of fans, dampers, and heating components in terminal units.";
+    return "<a href=\"https://github.com/automatic-controls/commissioning-scripts/tree/main/samples/TerminalUnitTest\" target=\"_blank\" style=\"border:none;\">Terminal Unit Commissioning Script</a> v0.1.0<br>Evaluates performance of fans, dampers, and heating components.";
   }
   @Override public String[] getParamNames(){
     return new String[]{"Dampers", "Fans", "Heating"};
@@ -460,6 +460,11 @@ public class TerminalUnitTest extends Script {
     sb.append("}\n");
     sb.append("}\n");
     sb.append("}\n");
+    sb.append("function prepareDataExport(){\n");
+    sb.append("if (exportDataButton.getAttribute(\"href\").length===1 && DATA){\n");
+    sb.append("exportDataButton.setAttribute(\"href\", \"data:text/plain;charset=utf-8,\"+encodeURIComponent(JSON.stringify(DATA, undefined, 2)));\n");
+    sb.append("}\n");
+    sb.append("}\n");
     sb.append("</script>\n");
     sb.append("</head>\n");
     sb.append("<body>\n");
@@ -468,6 +473,7 @@ public class TerminalUnitTest extends Script {
     sb.append("<h1>Terminal Unit Report</h1>\n");
     sb.append("<button class=\"e\" onclick=\"reloadData()\">Reevaluate Data Tolerances</button>\n");
     sb.append("<button class=\"e\" onclick=\"toggleGraphs()\">Toggle Graph Visibility</button>\n");
+    sb.append("<a class=\"e\" id=\"exportDataButton\" href=\"#\" download=\"data.json\" onclick=\"prepareDataExport()\">Export Data</a>\n");
     sb.append("<br>\n");
     sb.append("<div class=\"divGrouping\">\n");
     sb.append("<input type=\"checkbox\" id=\"useMaxCooling\">\n");
@@ -870,12 +876,12 @@ public class TerminalUnitTest extends Script {
               break heatTest;
             }
             lat = Double.parseDouble(t);
+            heatingX[i] = (time-startTime)/60000.0;
+            heatingY[i] = lat-Double.parseDouble(s)-heatingY[0];
             if (lat>highLimit){
               heatingSamples = i+1;
               break;
             }
-            heatingX[i] = (time-startTime)/60000.0;
-            heatingY[i] = lat-Double.parseDouble(s)-heatingY[0];
             if (heatingY[i]>yMax){
               yMax = heatingY[i];
             }
@@ -986,6 +992,8 @@ public class TerminalUnitTest extends Script {
               break heatTest;
             }
             lat = Double.parseDouble(t);
+            heatingX[i] = (time-startTime)/60000.0;
+            heatingY[i] = lat-Double.parseDouble(s)-heatingY[0];
             if (pumpStart!=-1 && (lat>highLimit || lat<lowLimit)){
               if (swapped){
                 heatingSamples = i+1;
@@ -999,8 +1007,6 @@ public class TerminalUnitTest extends Script {
                 }
               }
             }
-            heatingX[i] = (time-startTime)/60000.0;
-            heatingY[i] = lat-Double.parseDouble(s)-heatingY[0];
             sum+=heatingY[i];
             if (heatingY[i]>yMax){
               yMax = heatingY[i];
