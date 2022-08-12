@@ -13,7 +13,7 @@ public class TerminalUnitTest extends Script {
   private volatile boolean testHeating = false;
   private volatile boolean initialized = false;
   @Override public String getDescription(){
-    return "Evaluate performance of fans, dampers, and heating components on terminal units.";
+    return "Evaluate performance of fans, dampers, and heating components in terminal units.";
   }
   @Override public String[] getParamNames(){
     return new String[]{"Dampers", "Fans", "Heating"};
@@ -641,8 +641,8 @@ public class TerminalUnitTest extends Script {
     private final static String tagPumpCmdLockValue = "pump_cmd_lock_value";
     private final static String tagPumpRevLockFlag = "pump_rev_lock_flag";
     private final static String tagPumpRevLockValue = "pump_rev_lock_value";
-    private final static double lowLimit = 40;
-    private final static double highLimit = 120;
+    private final static double lowLimit = 40.0;
+    private final static double highLimit = 120.0;
     public volatile ResolvedTestingUnit x;
     public volatile int group;
     public volatile String path;
