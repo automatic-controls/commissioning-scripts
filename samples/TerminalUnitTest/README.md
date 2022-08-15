@@ -8,6 +8,7 @@
   - [Interpreting Results](#interpreting-results)
     - [Supply Fan Tests](#supply-fan-tests)
     - [Damper Airflow Tests](#damper-airflow-tests)
+    - [Heating/Cooling Performance Tests](#heatingcooling-performance-tests)
     - [Sample Output](#sample-output)
   - [Mappings](#mappings)
 
@@ -71,17 +72,27 @@ You should ensure air and water sources are activated appropriately before runni
 
 ## Interpreting Results
 
-The location column provides a link which navigates to the selected control program in WebCTRL. When you hover over a cell in the duration column, a tooltip tells you the precise start and end time for that test. When you hover over a non-graph cell in the damper airflow column, a tooltip tells you the maximum cooling *cfm* design parameter for that damper. When you click on a cell in the damper airflow column, the cell will expand into a graph showing airflow (*cfm*) vs. damper position (*%*). When you click on a cell in the temperature differential column, the cell will expand into a graph showing temperature vs. time. The *toggle graph visibility* button can be used to show or hide all graphs at once. The *export data* button will download all the raw data as a *.json* file.
+The location column provides a link which navigates to the selected control program in WebCTRL. When you hover over a cell in the duration column, a tooltip tells you the precise start and end time for that test. When you hover over a non-graph cell in the damper airflow column, a tooltip tells you the maximum cooling *cfm* design parameter for that damper. The *export data* button will download all the raw data as a *.json* file.
+
+When you click on a cell in the damper airflow column, the cell will expand into a graph showing airflow (*cfm*) vs. damper position (*%*). When you click on a cell in the temperature differential column, the cell will expand into a graph showing temperature vs. time. The *toggle graph visibility* button can be used to show or hide all graphs at once. Hover over any graph to view the *(x,y)* position of your cursor. Holding *shift* or *ctrl* while hovering locks your cursor position to the nearest data point.
 
 Results are color coded. If no problems are detected, green is used with a message: *success*. If there is any sort of communication error or the script is unable to get and set node values, magenta is used with a message: *error*. Red is used for any other sort of problem detected during the test or the subsequent data analysis. The magenta error message can show up anywhere, so we refrain from specifically mentioning it in the following sections. If anything unexpected occurs, it is recommended that you check the error log page of the commissioning scripts add-on.
 
+Upon successful data collection, the damper airflow and temperature differential columns support additional analysis based on parameters you provide using the sliders at the top of the output page. After moving the sliders to the designated positions, press the *Reevaluate Data Tolerances* button to apply the new parameters.
+
 ### Supply Fan Tests
 
-The supply fan test columns will display either *success* or *unresponsive*. If a fan is commanded to start, but status remains off, then the *fan start* test has a result of *unreponsive*. If a fan is commanded to stop, but status remains on, then the *fan stop* test has a result of *unreponsive*. Refer to the [pseudocode](#high-level-pseudocode) to see exactly when *unresponsive* errors are thrown.
+The supply fan test columns will display either *success* or *unresponsive*. If a fan is commanded to start, but status remains off, then the *fan start* test has a result of *unresponsive*. If a fan is commanded to stop, but status remains on, then the *fan stop* test has a result of *unresponsive*.
 
 ### Damper Airflow Tests
 
-The *damper airflow* test column will display either *success*, *unresponsive*, or *failure*.
+The *damper airflow* test column will display either *success*, *unresponsive*, or *failure*. When the damper fails to attain a specified position after waiting 4 minutes, an *unresponsive* error is thrown. Generic *failure* messages occur when the collected data does not meet expectations. It is expected that airflow is 0 *cfm* when damper position is 0%, and it is expected that airflow increases as damper position increases. A damper error tolerance slider is provided to control how strict these expectations are to be enforced. A checkbox optionally specifies whether to require that maximum attained airflow exceeds the maximum cooling design parameter specified in WebCTRL. The number provided after *success* or *failure* messages indicates the maximum attained airflow.
+
+### Heating/Cooling Performance Tests
+
+Error messages shown in the temperature differential columns are among: *loss of airflow*, *compressor start failure*, *compressor stop failure*, *heating failure*, *cooling failure*, and *erratic temperature sensor*. When supply fan status is off and damper airflow goes below 90 *cfm* at any point during the test, a *loss of airflow* error is thrown. When a heating pump is commanded on but status remains off, a *compressor start failure* error is thrown. When a heating pump is commanded off but status remains on, a *compressor stop failure* error is thrown.
+
+The remaining three error messages are thrown during the data analysis phase. When the maximum attained temperature differential is smaller than the *minimum heating differential* slider, a *heating failure* error is thrown. Similarly, the *minimum cooling differential* slider controls whether a *cooling failure* error is thrown. Cooling performance is evaluated only for heat pumps. The number provided with *success* or *failure* messages indicates the maximum temperature range attained for the duration of the test. When the temperature reading jumps too quickly, an *erratic temperature sensor* error is thrown. For instance, when the *erratic thermostat threshhold* slider is set to 12&deg;F, it means the temperature should not change by more than 12&deg;F in 10 seconds.
 
 ### Sample Output
 
