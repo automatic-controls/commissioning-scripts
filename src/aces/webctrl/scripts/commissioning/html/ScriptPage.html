@@ -19,9 +19,10 @@
         b.style.textTransform = styles.textTransform;
       }
       function add(id, name, desc, active, status, params){
-        const trimmedExtension = name.endsWith(".java");
+        const isJar = name.endsWith(".jar");
+        const trimmedExtension = isJar || name.endsWith(".java");
         if (trimmedExtension){
-          name = name.substring(0, name.length-5);
+          name = name.substring(0, name.length-(isJar?4:5));
         }
         const tr = document.createElement("TR");
         tr.uniqueID = id;
@@ -179,7 +180,7 @@
         td_actions.appendChild(downloadLink);
         downloadLink.className = "e";
         downloadLink.innerText = "Download Script";
-        downloadLink.setAttribute("download",trimmedExtension?name+".java":name);
+        downloadLink.setAttribute("download",trimmedExtension?name+(isJar?".jar":".java"):name);
         downloadLink.setAttribute("target","_blank");
         downloadLink.style.borderWidth = "2px";
         downloadLink.style.fontWeight = "bold";
@@ -297,7 +298,7 @@
       <a class="e" href="__PREFIX__/ErrorLog" target="_blank">Error Log</a>
       <a id="documentationLink" class="e" href="__DOC_LINK__" target="_blank">Documentation</a>
       <button id="uploadScriptButton" class="e" style="border-width:2px;font-weight:bold;font-style:italic" onclick="fileField.click()">Upload Script</button>
-      <input type="file" id="fileField" accept=".java" style="display:none" oninput="uploadScript();">
+      <input type="file" id="fileField" accept=".jar,.java" style="display:none" oninput="uploadScript();">
     </div>
     <script>
       var submittingFile = false;

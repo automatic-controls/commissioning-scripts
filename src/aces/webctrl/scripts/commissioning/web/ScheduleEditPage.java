@@ -30,6 +30,8 @@ public class ScheduleEditPage extends ServletBase {
         s = m.getName();
         if (s.endsWith(".java")){
           s = s.substring(0,s.length()-5);
+        }else if (s.endsWith(".jar")){
+          s = s.substring(0,s.length()-4);
         }
         sb.append("<option value=\"").append(m.ID).append("\">").append(Utility.escapeHTML(s)).append("</option>\n");
       }
@@ -124,6 +126,8 @@ public class ScheduleEditPage extends ServletBase {
                     str = m.getName();
                     if (str.endsWith(".java")){
                       str = str.substring(0,str.length()-5);
+                    }else if (str.endsWith(".jar")){
+                      str = str.substring(0,str.length()-4);
                     }
                     sb.append("<option value=\"").append(m.ID).append('"');
                     if (blank && m==selectedTest){

@@ -14,6 +14,8 @@
       function add(id, script, mapping, operator, threads, maxTests, cron, next, hash){
         if (script.endsWith(".java")){
           script = script.substring(0, script.length-5);
+        }else if (script.endsWith(".jar")){
+          script = script.substring(0, script.length-4);
         }
         const tr = document.createElement("TR");
         const td_script = document.createElement("TD");

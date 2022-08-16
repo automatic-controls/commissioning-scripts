@@ -4,7 +4,7 @@ import java.util.*;
 import java.util.concurrent.*;
 /**
  * Essentially summarizes a selected {@code Mapping} by retrieving the values of all mapped nodes.
- * Compiled at runtime by Janino. http://janino-compiler.github.io/janino/
+ * Interpreted at runtime by Janino. http://janino-compiler.github.io/janino/
  */
 public class SummaryReport extends Script {
   /**

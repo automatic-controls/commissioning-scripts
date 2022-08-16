@@ -2,6 +2,7 @@ package aces.webctrl.scripts.commissioning.core;
 import org.codehaus.janino.*;
 import com.controlj.green.addonsupport.access.*;
 import java.util.*;
+import java.util.jar.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.function.IntUnaryOperator;
@@ -9,6 +10,7 @@ import java.nio.file.*;
 import java.io.*;
 import java.security.*;
 import javax.servlet.http.*;
+import java.net.*;
 public class Test {
   public final static ConcurrentSkipListMap<Integer,Test> instances = new ConcurrentSkipListMap<Integer,Test>();
   private final static AtomicInteger nextID = new AtomicInteger();
@@ -25,6 +27,7 @@ public class Test {
   private volatile String cachedOutput = null;
   private volatile int hash = 0;
   public volatile Map<String,Boolean> lastParams = null;
+  private volatile boolean jar = false;
   /**
    * Construct a new test using the given parameters.
    */
@@ -32,6 +35,7 @@ public class Test {
     clearStatus();
     this.scriptFile = scriptFile;
     this.name = scriptFile.getFileName().toString();
+    jar = this.name.endsWith(".jar");
     try{
       getScript();
     }catch(Throwable t){
@@ -53,7 +57,7 @@ public class Test {
       while (iter.hasNext()){
         st = iter.next();
         try{
-          if (Files.isSameFile(scripts.resolve(st.getRelScriptPath()), scriptFile)){
+          if (!Files.exists(scripts.resolve(st.getRelScriptPath()))){
             iter.remove();
           }
         }catch(Throwable t){
@@ -434,39 +438,97 @@ public class Test {
     return false;
   }
   public Script getScript() throws Throwable {
-    try{
-      final SimpleCompiler sc = new SimpleCompiler();
-      final MessageDigest md = MessageDigest.getInstance("MD5");
-      try(
-        BufferedReader r = new BufferedReader(new InputStreamReader(new DigestInputStream(new FileInputStream(scriptFile.toFile()), md), java.nio.charset.StandardCharsets.UTF_8));
-      ){
-        sc.cook(name,r);
-      }
-      hash = Arrays.hashCode(md.digest());
-      ClassLoader cl = sc.getClassLoader();
-      org.codehaus.janino.util.ClassFile[] cfs = sc.getClassFiles();
-      for (int i=0;i<cfs.length;++i){
-        try{
-          Script s = cl.loadClass(cfs[i].getThisClassName()).asSubclass(Script.class).getDeclaredConstructor().newInstance();
-          try{
-            description = s.getDescription();
-            String[] params = s.getParamNames();
-            paramNames = params==null?null:Collections.unmodifiableSet(new TreeSet<String>(Arrays.asList(params)));
-          }catch(Throwable t){
-            description = "Failed to retrieve description and parameter names.";
-            paramNames = null;
-            Initializer.log(t);
+    if (jar){
+      try{
+        {
+          MessageDigest md = MessageDigest.getInstance("MD5");
+          byte[] buf = new byte[4096];
+          try(
+            DigestInputStream in = new DigestInputStream(new FileInputStream(scriptFile.toFile()), md);
+          ){
+            while (in.read(buf,0,buf.length)!=-1){}
           }
-          return s;
-        }catch(Throwable t){}
+          buf = null;
+          hash = Arrays.hashCode(md.digest());
+        }
+        String scriptClass;
+        try(
+          JarFile jarFile = new JarFile(scriptFile.toFile(),false);
+        ){
+          Manifest m = jarFile.getManifest();
+          if (m==null){
+            description = "Manifest is missing from jar file.";
+            paramNames = null;
+            return null;
+          }
+          scriptClass = m.getMainAttributes().getValue("Main-Class");
+          if (scriptClass==null){
+            description = "\"Main-Class\" header is missing from jar manifest.";
+            paramNames = null;
+            return null;
+          }
+        }
+        Script s;
+        try(
+          URLClassLoader cl = new URLClassLoader(new URL[]{scriptFile.toUri().toURL()}, Test.class.getClassLoader());
+        ){
+          s = cl.loadClass(scriptClass).asSubclass(Script.class).getDeclaredConstructor().newInstance();
+        }catch(Throwable t){
+          description = "Could not load main script class: "+Utility.escapeHTML(scriptClass);
+          paramNames = null;
+          Initializer.log(t);
+          return null;
+        }
+        try{
+          description = s.getDescription();
+          String[] params = s.getParamNames();
+          paramNames = params==null?null:Collections.unmodifiableSet(new TreeSet<String>(Arrays.asList(params)));
+        }catch(Throwable t){
+          description = "Failed to retrieve description and parameter names.";
+          paramNames = null;
+          Initializer.log(t);
+        }
+        return s;
+      }catch(Throwable t){
+        description = "Failed to load script.";
+        paramNames = null;
+        throw t;
       }
-      description = "Could not locate implementation of "+Utility.escapeHTML(Script.class.getName())+" with no-argument constructor.";
-      paramNames = null;
-      return null;
-    }catch(Throwable t){
-      description = "Failed to compile script.";
-      paramNames = null;
-      throw t;
+    }else{
+      try{
+        final SimpleCompiler sc = new SimpleCompiler();
+        final MessageDigest md = MessageDigest.getInstance("MD5");
+        try(
+          BufferedReader r = new BufferedReader(new InputStreamReader(new DigestInputStream(new FileInputStream(scriptFile.toFile()), md), java.nio.charset.StandardCharsets.UTF_8));
+        ){
+          sc.cook(name,r);
+        }
+        hash = Arrays.hashCode(md.digest());
+        ClassLoader cl = sc.getClassLoader();
+        org.codehaus.janino.util.ClassFile[] cfs = sc.getClassFiles();
+        for (int i=0;i<cfs.length;++i){
+          try{
+            Script s = cl.loadClass(cfs[i].getThisClassName()).asSubclass(Script.class).getDeclaredConstructor().newInstance();
+            try{
+              description = s.getDescription();
+              String[] params = s.getParamNames();
+              paramNames = params==null?null:Collections.unmodifiableSet(new TreeSet<String>(Arrays.asList(params)));
+            }catch(Throwable t){
+              description = "Failed to retrieve description and parameter names.";
+              paramNames = null;
+              Initializer.log(t);
+            }
+            return s;
+          }catch(Throwable t){}
+        }
+        description = "Could not locate implementation of "+Utility.escapeHTML(Script.class.getName())+" with no-argument constructor.";
+        paramNames = null;
+        return null;
+      }catch(Throwable t){
+        description = "Failed to compile script.";
+        paramNames = null;
+        throw t;
+      }
     }
   }
 }

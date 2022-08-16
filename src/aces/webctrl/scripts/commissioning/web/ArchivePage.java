@@ -9,6 +9,8 @@ public class ArchivePage extends ServletBase {
       name = at.getScriptName();
       if (name.endsWith(".java")){
         name = name.substring(0,name.length()-5);
+      }else if (name.endsWith(".jar")){
+        name = name.substring(0,name.length()-4);
       }
       sb.append("<tr>");
       sb.append("\n<td>").append(Utility.escapeHTML(name)).append("</td>");
