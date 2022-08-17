@@ -1,0 +1,5 @@
+url:janino:https://repo1.maven.org/maven2/org/codehaus/janino/janino/3.1.7/janino-3.1.7-sources.jar
+url:commons-compiler:https://repo1.maven.org/maven2/org/codehaus/janino/commons-compiler/3.1.7/commons-compiler-3.1.7-sources.jar
+file:spring-context:bin\lib
+file:javax.activation:bin\lib
+file:core-api:modules\core
