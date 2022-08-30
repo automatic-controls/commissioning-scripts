@@ -8,10 +8,9 @@ setlocal
   set "err=%ErrorLevel%"
 endlocal & set "err=%err%"
 echo Archiving...
-set "sourceJar=%workspace%\!name!-sources.jar"
-set "classJar=%workspace%\!name!.jar"
-if exist "%sourceJar%" del /F "%sourceJar%" >nul 2>nul
-if exist "%classJar%" del /F "%classJar%" >nul 2>nul
+set "sourceJar=%workspace%\!name!-!projectVersion!-sources.jar"
+set "classJar=%workspace%\!name!-!projectVersion!.jar"
+del /F "%workspace%\*.jar" >nul 2>nul
 set "err2=0"
 "%JDKBin%\jar.exe" -c -M -f "%sourceJar%" -C "%src%" .
 if %ErrorLevel% NEQ 0 set "err2=1"

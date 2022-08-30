@@ -1,7 +1,7 @@
 JDK Version:
-openjdk 17.0.2 2022-01-18
-OpenJDK Runtime Environment (build 17.0.2+8-86)
-OpenJDK 64-Bit Server VM (build 17.0.2+8-86, mixed mode, sharing)
+openjdk 18.0.2.1 2022-08-18
+OpenJDK Runtime Environment (build 18.0.2.1+1-1)
+OpenJDK 64-Bit Server VM (build 18.0.2.1+1-1, mixed mode, sharing)
 
 Compilation Flags:
 --release 8
@@ -14,12 +14,12 @@ directaccess-api-addon-1.7.0
 tomcat-embed-core-9.0.37
 webaccess-api-addon-1.7.0
 xdatabase-api-addon-1.7.0
-commons-compiler-3.1.7-sources
+commons-compiler-3.1.8-sources
 core-api-8.0.002
-janino-3.1.7-sources
+janino-3.1.8-sources
 javax.activation-1.2.0
 spring-context-5.2.8.RELEASE
 
 Packaged Dependencies:
-commons-compiler-3.1.7
-janino-3.1.7
+commons-compiler-3.1.8
+janino-3.1.8
