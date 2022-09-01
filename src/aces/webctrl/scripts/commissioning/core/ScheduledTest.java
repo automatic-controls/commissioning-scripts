@@ -401,8 +401,10 @@ public class ScheduledTest {
     if (t==null){
       scriptHash = 0;
     }else{
-      try{
-        scriptHash = t.getScript()==null?0:t.hashCode();
+      try(
+        Script script = t.getScript(); 
+      ){
+        scriptHash = script==null?0:t.hashCode();
       }catch(Throwable e){
         scriptHash = 0;
       }
@@ -420,8 +422,10 @@ public class ScheduledTest {
     if (t==null){
       return false;
     }else{
-      try{
-        if (t.getScript()==null || scriptHash!=t.hashCode()){
+      try(
+        Script script = t.getScript();
+      ){
+        if (script==null || scriptHash!=t.hashCode()){
           return false;
         }
       }catch(Throwable e){

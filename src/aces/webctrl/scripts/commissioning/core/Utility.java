@@ -112,6 +112,19 @@ public class Utility {
     return new String(arr, java.nio.charset.StandardCharsets.UTF_8);
   }
   /**
+   * Loads all bytes from the given resource and convert to a {@code UTF-8} string.
+   * @return the {@code UTF-8} string representing the given resource.
+   */
+  public static String loadResourceAsString(ClassLoader cl, String name) throws Throwable {
+    byte[] arr;
+    try(
+      InputStream s = cl.getResourceAsStream(name);
+    ){
+      arr = readAllBytes(s);
+    }
+    return new String(arr, java.nio.charset.StandardCharsets.UTF_8);
+  }
+  /**
    * @return a string which encodes the given list.
    * @see #decodeList(String)
    */

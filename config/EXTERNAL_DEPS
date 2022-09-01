@@ -1,2 +1,4 @@
-url:janino:https://repo1.maven.org/maven2/org/codehaus/janino/janino/3.1.8/janino-3.1.8.jar
-url:commons-compiler:https://repo1.maven.org/maven2/org/codehaus/janino/commons-compiler/3.1.8/commons-compiler-3.1.8.jar
+url:janino-3.1.8.jar:https://repo1.maven.org/maven2/org/codehaus/janino/janino/3.1.8/janino-3.1.8.jar
+url:janino-3.1.8-sources.jar:https://repo1.maven.org/maven2/org/codehaus/janino/janino/3.1.8/janino-3.1.8-sources.jar
+url:commons-compiler-3.1.8.jar:https://repo1.maven.org/maven2/org/codehaus/janino/commons-compiler/3.1.8/commons-compiler-3.1.8.jar
+url:commons-compiler-3.1.8-sources.jar:https://repo1.maven.org/maven2/org/codehaus/janino/commons-compiler/3.1.8/commons-compiler-3.1.8-sources.jar

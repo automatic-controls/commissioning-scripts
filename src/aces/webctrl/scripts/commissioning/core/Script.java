@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.*;
  * s.exit();
  * ArchivedTest.save(s.getOutput(false));
  * ScheduledTest.onComplete(s.getOutput(true), s.isEmailCSV());
+ * s.close();
  * s = null;
  * }</pre>
  * The {@code for} loop over the {@code ResolvedTestingUnit} collection is shown for illustrative purposes only.
@@ -36,7 +37,7 @@ import java.util.concurrent.atomic.*;
  * Also, {@link #getOutput(boolean) getOutput(false)} and {@link #updateAJAX(HttpServletRequest, HttpServletResponse)} may be concurrently invoked at any time during a {@code Script} object's lifetime.
  * Refer to individual field and method Javadocs for more information.
  */
-public class Script {
+public class Script implements AutoCloseable {
   /** Contains a reference to the object which controls this script's execution. */
   public volatile Test test = null;
   /** Contains a reference to the mapping used to resolve testing units for this script. */
@@ -142,5 +143,15 @@ public class Script {
    */
   public boolean isEmailCSV() throws Throwable {
     return false;
+  }
+  /**
+   * Closes the {@code ClassLoader} associated with this {@code Script} when necessary.
+   */
+  @Override public void close() throws Exception {
+    ClassLoader cl = Script.class.getClassLoader();
+    if (cl instanceof AutoCloseable){
+      // In particular, we're looking at java.net.URLClassLoader
+      ((AutoCloseable)cl).close();
+    }
   }
 }

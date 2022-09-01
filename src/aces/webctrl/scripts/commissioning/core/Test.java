@@ -36,9 +36,9 @@ public class Test {
     this.scriptFile = scriptFile;
     this.name = scriptFile.getFileName().toString();
     jar = this.name.endsWith(".jar");
-    try{
-      getScript();
-    }catch(Throwable t){
+    try(
+      Script script = getScript();
+    ){}catch(Throwable t){
       Initializer.log(t);
     }
     instances.put(ID,this);
@@ -391,10 +391,11 @@ public class Test {
                           schedule.onComplete(ExpansionUtils.nullifyLinks(email),csv);
                         }
                       }
-                      script = null;
                     }catch(Throwable t){
                       Initializer.log(t);
                     }
+                    try{ script.close(); }catch(Throwable t){ Initializer.log(t); }
+                    script = null;
                     if (doClear){
                       clearStatus();
                     }
@@ -429,6 +430,9 @@ public class Test {
           }catch(InterruptedException e){}catch(Throwable t){
             Initializer.log(t);
           }
+        }
+        if (script!=null){
+          try{ script.close(); }catch(Throwable t){ Initializer.log(t); }
           script = null;
         }
         running.set(false);
@@ -439,6 +443,7 @@ public class Test {
   }
   public Script getScript() throws Throwable {
     if (jar){
+      URLClassLoader cl = null;
       try{
         {
           MessageDigest md = MessageDigest.getInstance("MD5");
@@ -467,13 +472,21 @@ public class Test {
             paramNames = null;
             return null;
           }
+          scriptClass = scriptClass.replace('\\','.').replace('/','.');
+        }
+        try{
+          cl = new URLClassLoader(new URL[]{scriptFile.toUri().toURL()}, Test.class.getClassLoader());
+        }catch(Throwable t){
+          description = "Failed to create URLClassLoader.";
+          paramNames = null;
+          Initializer.log(t);
+          return null;
         }
         Script s;
-        try(
-          URLClassLoader cl = new URLClassLoader(new URL[]{scriptFile.toUri().toURL()}, Test.class.getClassLoader());
-        ){
+        try{
           s = cl.loadClass(scriptClass).asSubclass(Script.class).getDeclaredConstructor().newInstance();
         }catch(Throwable t){
+          try{ cl.close(); }catch(Throwable tt){ Initializer.log(tt); }
           description = "Could not load main script class: "+Utility.escapeHTML(scriptClass);
           paramNames = null;
           Initializer.log(t);
@@ -490,6 +503,9 @@ public class Test {
         }
         return s;
       }catch(Throwable t){
+        if (cl!=null){
+          try{ cl.close(); }catch(Throwable tt){ Initializer.log(tt); }
+        }
         description = "Failed to load script.";
         paramNames = null;
         throw t;

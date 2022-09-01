@@ -14,12 +14,12 @@ directaccess-api-addon-1.7.0
 tomcat-embed-core-9.0.37
 webaccess-api-addon-1.7.0
 xdatabase-api-addon-1.7.0
-commons-compiler-3.1.8-sources
 core-api-8.0.002
-janino-3.1.8-sources
 javax.activation-1.2.0
 spring-context-5.2.8.RELEASE
 
 Packaged Dependencies:
+commons-compiler-3.1.8-sources
 commons-compiler-3.1.8
+janino-3.1.8-sources
 janino-3.1.8

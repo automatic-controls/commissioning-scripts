@@ -82,9 +82,9 @@ public class ScriptPage extends ServletBase {
           if (!te.isRunning()){
             te.clearStatus();
           }
-          try{
-            te.getScript();
-          }catch(Throwable t){
+          try(
+            Script scriptInstance = te.getScript();
+          ){}catch(Throwable t){
             Initializer.log(t);
           }
           break;
