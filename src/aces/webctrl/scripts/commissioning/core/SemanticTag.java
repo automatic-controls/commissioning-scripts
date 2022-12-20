@@ -9,6 +9,7 @@ public class SemanticTag {
   private volatile String expr;
   private volatile String tag;
   private volatile Pattern pattern = null;
+  private volatile boolean literal;
   public void serialize(ByteBuilder b){
     b.write(tag);
     b.write(expr);
@@ -30,8 +31,11 @@ public class SemanticTag {
   public void setExpression(String expr) throws PatternSyntaxException {
     expr = Utility.V_SPACE.matcher(expr).replaceAll("");
     this.expr = expr;
+    literal = expr.charAt(0)=='@';
     pattern = null;
-    pattern = Pattern.compile(expr);
+    if (!literal){
+      pattern = Pattern.compile(expr);
+    }
   }
   /**
    * @return the expression used to match nodes against this semantic tag.
@@ -44,6 +48,12 @@ public class SemanticTag {
    */
   public String getTag(){
     return tag;
+  }
+  /**
+   * @return whether the expression should be interpreted as a literal value instead of a node mapping.
+   */
+  public boolean isLiteral(){
+    return literal;
   }
   /**
    * Attempts to resolve this semantic tag against the provided node.

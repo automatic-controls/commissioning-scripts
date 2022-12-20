@@ -6,7 +6,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.nio.file.*;
 public class Initializer implements ServletContextListener {
-  /** Contains basic informatin about this addon. */
+  /** Contains basic information about this addon. */
   public volatile static AddOnInfo info = null;
   /** The name of this addon */
   private volatile static String name;
@@ -177,16 +177,16 @@ public class Initializer implements ServletContextListener {
    */
   @Override public void contextDestroyed(ServletContextEvent sce){
     try{
-      kill = true;
-      dataQueryThread.interrupt();
       Collection<Test> tests = Test.instances.values();
       for (Test t:tests){
         t.kill();
       }
-      dataQueryThread.join();
       for (Test t:tests){
         t.waitForDeath();
       }
+      kill = true;
+      dataQueryThread.interrupt();
+      dataQueryThread.join();
       ArchivedTest.saveAll();
       Mapping.saveAll();
       ScheduledTest.saveAll();

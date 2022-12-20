@@ -55,8 +55,13 @@ public class ResolvedTestingUnit {
       node = loc.toNode();
       group = tu.getGroup();
       Node n;
+      String expr;
       for (SemanticTag st:tagMappings){
-        n = st.resolve(node);
+        if (st.isLiteral() && (expr=st.getExpression()).charAt(0)=='@'){
+          n = new LiteralNode(expr.substring(1));
+        }else{
+          n = st.resolve(node);
+        }
         if (n!=null){
           tags.put(st.getTag(), n);
         }
@@ -120,6 +125,10 @@ public class ResolvedTestingUnit {
       return false;
     }
     final String str = String.valueOf(value);
+    if (n instanceof LiteralNode){
+      ((LiteralNode)n).setValue(str);
+      return true;
+    }
     final Result<Boolean> ret = new Result<Boolean>();
     for (int i=0;i<tries;++i){
       if (i!=0){
@@ -153,6 +162,13 @@ public class ResolvedTestingUnit {
       return null;
     }
     final String str = String.valueOf(value);
+    if (n instanceof LiteralNode){
+      final LiteralNode nn = (LiteralNode)n;
+      final String prev = nn.getValue();
+      nn.setValue(str);
+      marks.put(tag,prev);
+      return prev;
+    }
     final Result<String> ret = new Result<String>();
     final Container<String> val = new Container<String>(null);
     String s;
@@ -219,6 +235,8 @@ public class ResolvedTestingUnit {
   public static String getValue(Node n, final int tries, final long failedAttemptTimeout) throws InterruptedException {
     if (n==null){
       return null;
+    }else if (n instanceof LiteralNode){
+      return ((LiteralNode)n).getValue();
     }
     final Result<String> ret = new Result<String>();
     String s;
@@ -254,6 +272,8 @@ public class ResolvedTestingUnit {
   public static String getDisplayValue(Node n, final int tries, final long failedAttemptTimeout) throws InterruptedException {
     if (n==null){
       return null;
+    }else if (n instanceof LiteralNode){
+      return ((LiteralNode)n).getDisplayValue();
     }
     final Result<String> ret = new Result<String>();
     String s;
@@ -301,6 +321,11 @@ public class ResolvedTestingUnit {
           final String value = marks.get(str);
           if (value!=null){
             final Node n = entry.getValue();
+            if (n instanceof LiteralNode){
+              ((LiteralNode)n).setValue(value);
+              marks.remove(str);
+              continue;
+            }
             final Result<Boolean> ret = new Result<Boolean>();
             rets.add(ret);
             Initializer.enqueue(new WriteAction(){

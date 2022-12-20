@@ -162,7 +162,7 @@ public class Test {
    */
   public void waitForDeath() throws InterruptedException {
     while (running.get()){
-      Thread.sleep(1000L);
+      Thread.sleep(500L);
     }
   }
   /**
@@ -353,7 +353,12 @@ public class Test {
                           Initializer.log(t);
                         }
                         if (autoReset.x){
-                          rtu.reset(null);
+                          while (true){
+                            try{
+                              rtu.reset(null);
+                              break;
+                            }catch(InterruptedException e){}
+                          }
                         }
                         rtu.complete();
                         groups[i].complete();
