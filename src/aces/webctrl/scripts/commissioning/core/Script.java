@@ -27,7 +27,10 @@ import java.util.concurrent.atomic.*;
  *   s.exec(rtu);
  * &#125;
  * s.exit();
- * ArchivedTest.save(s.getOutput(false));
+ * s.isPublic();
+ * ArchivedTest at = new ArchivedTest(...);
+ * at.save(s.getOutput(false));
+ * s.archivedTest = at;
  * ScheduledTest.onComplete(s.getOutput(true), s.isEmailCSV());
  * s.close();
  * s = null;
@@ -46,6 +49,8 @@ public class Script implements AutoCloseable {
   public volatile Collection<ResolvedTestingUnit> units = null;
   /** The schedule which triggered this script to execute, or {@code null} if this script was manually triggered. */
   public volatile ScheduledTest schedule = null;
+  /** The {@code ArchivedTest} object which saves the results of this script. */
+  public volatile ArchivedTest archivedTest = null;
   /**
    * Contains user-supplied parameters given at initialization (read-only).
    * Parameter names (mapping keys) are specified by {@link #getParamNames()}.
@@ -142,6 +147,12 @@ public class Script implements AutoCloseable {
    * @return whether emailed reports should be sent as a CSV attachment.
    */
   public boolean isEmailCSV() throws Throwable {
+    return false;
+  }
+  /**
+   * @return whether archived test results should be public to all users, even those not logged into WebCTRL.
+   */
+  public boolean isArchivePublic() throws Throwable {
     return false;
   }
   /**

@@ -19,6 +19,14 @@ public class ArchivedTest {
   private volatile int threads;
   private volatile double maxTests;
   private volatile Map<String,Boolean> params;
+  private volatile boolean isPublic;
+  public String getLink(){
+    final String base = Settings.baseURI;
+    if (base==null){
+      return null;
+    }
+    return base+"/"+Initializer.getName()+"/ArchiveOutput?ID="+ID;
+  }
   public String getScriptName(){
     return scriptName;
   }
@@ -39,6 +47,9 @@ public class ArchivedTest {
   }
   public Map<String,Boolean> getParams(){
     return params;
+  }
+  public boolean isPublic(){
+    return isPublic;
   }
   public synchronized static boolean saveAll(){
     ByteBuffer buf = ByteBuffer.wrap(serializeAll());
@@ -84,6 +95,7 @@ public class ArchivedTest {
     b.write(endTime);
     b.write(threads);
     b.write(maxTests);
+    b.write(isPublic);
     b.write(params.size());
     params.forEach(new java.util.function.BiConsumer<String,Boolean>(){
       public void accept(String name, Boolean val){
@@ -99,14 +111,15 @@ public class ArchivedTest {
     final long endTime = s.readLong();
     final int threads = s.readInt();
     final double maxTests = s.readDouble();
+    final boolean isPublic = s.readBoolean();
     final int len = s.readInt();
     final TreeMap<String,Boolean> params = new TreeMap<String,Boolean>();
     for (int i=0;i<len;++i){
       params.put(s.readString(), s.readBoolean());
     }
-    return new ArchivedTest(scriptName,operator,startTime,endTime,threads,maxTests,params);
+    return new ArchivedTest(scriptName,operator,startTime,endTime,threads,maxTests,isPublic,params);
   }
-  public ArchivedTest(String scriptName, String operator, long startTime, long endTime, int threads, double maxTests, Map<String,Boolean> params){
+  public ArchivedTest(String scriptName, String operator, long startTime, long endTime, int threads, double maxTests, boolean isPublic, Map<String,Boolean> params){
     try{
       dataFile = dataFolder.resolve(scriptName+'_'+String.valueOf(startTime));
     }catch(Throwable t){
@@ -118,6 +131,7 @@ public class ArchivedTest {
     this.endTime = endTime;
     this.threads = threads;
     this.maxTests = maxTests;
+    this.isPublic = isPublic;
     this.params = Collections.unmodifiableMap(params);
     instances.put(ID,this);
   }

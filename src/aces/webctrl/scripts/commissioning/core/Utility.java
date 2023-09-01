@@ -9,6 +9,9 @@ import java.util.*;
 import java.util.regex.*;
 import java.time.*;
 import java.time.format.*;
+import java.nio.*;
+import java.nio.file.*;
+import java.nio.channels.*;
 public class Utility {
   /**
    * Used to convert between time variables and user-friendly strings.
@@ -97,6 +100,26 @@ public class Utility {
       i+=read;
     }
     return arr;
+  }
+  public static void unpackResource(String name, Path output) throws Throwable {
+    ByteBuffer buf = ByteBuffer.allocate(8192);
+    boolean go = true;
+    try(
+      InputStream ins = Utility.class.getClassLoader().getResourceAsStream(name);
+      ReadableByteChannel in = Channels.newChannel(ins);
+      FileChannel out = FileChannel.open(output, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE);        
+    ){
+      do {
+        do {
+          go = in.read(buf)!=-1;
+        } while (go && buf.hasRemaining());
+        buf.flip();
+        while (buf.hasRemaining()){
+          out.write(buf);
+        }
+        buf.clear();
+      } while (go);
+    }
   }
   /**
    * Loads all bytes from the given resource and convert to a {@code UTF-8} string.

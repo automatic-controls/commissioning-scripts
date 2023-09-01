@@ -34,12 +34,15 @@ public class Initializer implements ServletContextListener {
   private final static long maxWriteLock = 1000L;
   /** Records all logged errors. */
   private final static ConcurrentLinkedQueue<String> errors = new ConcurrentLinkedQueue<String>();
-  // Temporary workaround until ALC releases a patch for WebCTRL
+  /** Names of scripts internally packaged into this addon. */
+  public final static HashSet<String> fixed_scripts = new HashSet<String>();
   static {
     try{
+      // Temporary workaround until ALC releases a patch for WebCTRL
       Class.forName("com.controlj.green.directaccess.DirectAccessInternal").getMethod("getDirectAccessInternal").invoke(null);
       com.controlj.green.addonsupport.access.DirectAccess.getDirectAccess();
     }catch (Throwable t){}
+    fixed_scripts.add("TerminalUnitTest.jar");
   }
   /**
    * Loads data and starts the database query processing thread.
@@ -50,6 +53,7 @@ public class Initializer implements ServletContextListener {
     logger = info.getDateStampLogger();
     con = DirectAccess.getDirectAccess().getRootSystemConnection();
     data = info.getPrivateDir().toPath();
+    Settings.mainDataFile = data.resolve("settings");
     ArchivedTest.dataFolder = data.resolve("test_archive");
     ArchivedTest.mainDataFile = data.resolve("archive_index");
     Mapping.dataFile = data.resolve("mappings");
@@ -69,15 +73,27 @@ public class Initializer implements ServletContextListener {
     }catch(Throwable t){
       log(t);
     }
+    Settings.load();
     ArchivedTest.loadAll();
     Mapping.loadAll();
     ScheduledTest.loadAll();
+    try{
+      Path p;
+      for (String s:fixed_scripts){
+        p = scriptFolder.resolve(s);
+        Utility.unpackResource("aces/webctrl/scripts/commissioning/fixed/"+s, p);
+      }
+    }catch(Throwable t){
+      log("Failed to unpack permanent script.");
+      log(t);
+    }
     try{
       Files.walkFileTree(scriptFolder, new SimpleFileVisitor<Path>(){
         @Override public FileVisitResult visitFile(Path file, java.nio.file.attribute.BasicFileAttributes attrs) throws java.io.IOException {
           Objects.requireNonNull(file);
           Objects.requireNonNull(attrs);
-          new Test(file);
+          Test t = new Test(file);
+          t.reserved = fixed_scripts.contains(t.getName());
           return FileVisitResult.CONTINUE;
         }
       });
@@ -187,6 +203,7 @@ public class Initializer implements ServletContextListener {
       kill = true;
       dataQueryThread.interrupt();
       dataQueryThread.join();
+      Settings.save();
       ArchivedTest.saveAll();
       Mapping.saveAll();
       ScheduledTest.saveAll();

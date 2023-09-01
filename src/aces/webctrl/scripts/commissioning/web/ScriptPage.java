@@ -56,6 +56,18 @@ public class ScriptPage extends ServletBase {
         return;
       }
       final Path script = Initializer.getScriptFolder().resolve(fileName);
+      Test newTest = null;
+      for (Test te:Test.instances.values()){
+        if (Files.isSameFile(script,te.getScriptFile())){
+          if (te.reserved){
+            Initializer.log(new FileAlreadyExistsException("Cannot overwrite permanent script: "+fileName));
+            res.setStatus(400);
+            return;
+          }
+          newTest = te;
+          break;
+        }
+      }
       {
         ByteBuffer buf = ByteBuffer.allocate(8192);
         boolean go = true;
@@ -75,23 +87,17 @@ public class ScriptPage extends ServletBase {
           } while (go);
         }
       }
-      Test newTest = null;
-      for (Test te:Test.instances.values()){
-        if (Files.isSameFile(script,te.getScriptFile())){
-          newTest = te;
-          if (!te.isRunning()){
-            te.clearStatus();
-          }
-          try(
-            Script scriptInstance = te.getScript();
-          ){}catch(Throwable t){
-            Initializer.log(t);
-          }
-          break;
-        }
-      }
       if (newTest==null){
         newTest = new Test(script);
+      }else{
+        if (!newTest.isRunning()){
+          newTest.clearStatus();
+        }
+        try(
+          Script scriptInstance = newTest.getScript();
+        ){}catch(Throwable t){
+          Initializer.log(t);
+        }
       }
       StringBuilder sb = new StringBuilder(256);
       sb.append("{\"id\":").append(newTest.ID);
@@ -205,7 +211,13 @@ public class ScriptPage extends ServletBase {
               break;
             }
             case "delete":{
-              t.delete();
+              if (t.reserved){
+                String err = "Cannot delete permanent script.";
+                res.sendError(400, err);
+                Initializer.log(new IllegalAccessError(err));
+              }else{
+                t.delete();
+              }
               break;
             }
             default:{

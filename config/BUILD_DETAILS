@@ -7,13 +7,13 @@ Compilation Flags:
 --release 8
 
 Runtime Dependencies:
-addonsupport-api-addon-1.7.0
-alarmmanager-api-addon-1.7.0
-bacnet-api-addon-1.8.007-20220318.0837r
-directaccess-api-addon-1.7.0
-tomcat-embed-core-9.0.37
-webaccess-api-addon-1.7.0
-xdatabase-api-addon-1.7.0
+addonsupport-api-addon-1.9.0
+alarmmanager-api-addon-1.9.0
+bacnet-api-core-1.10.002-20230209.1438r
+directaccess-api-addon-1.9.0
+tomcat-embed-core-9.0.68
+webaccess-api-addon-1.9.0
+xdatabase-api-addon-1.9.0
 core-api-8.0.002
 javax.activation-1.2.0
 spring-context-5.2.8.RELEASE

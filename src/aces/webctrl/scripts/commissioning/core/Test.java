@@ -28,6 +28,7 @@ public class Test {
   private volatile int hash = 0;
   public volatile Map<String,Boolean> lastParams = null;
   private volatile boolean jar = false;
+  public volatile boolean reserved = false;
   /**
    * Construct a new test using the given parameters.
    */
@@ -47,6 +48,9 @@ public class Test {
     return hash;
   }
   public void delete(){
+    if (reserved){
+      return;
+    }
     try{
       instances.remove(ID);
       kill();
@@ -378,12 +382,14 @@ public class Test {
                       status = "Termination error occurred.";
                     }
                     try{
+                      final boolean pub = script.isArchivePublic();
                       cachedOutput = getScriptOutputSafe(false);
-                      final ArchivedTest at = new ArchivedTest(name, operator, startTime, System.currentTimeMillis(), threads.length, mtest, params);
+                      final ArchivedTest at = new ArchivedTest(name, operator, startTime, System.currentTimeMillis(), threads.length, mtest, pub, params);
                       threads = null;
                       if (cachedOutput!=null){
                         at.save(cachedOutput);
                       }
+                      script.archivedTest = at;
                       if (schedule!=null && schedule.emails.size()>0){
                         String email = getScriptOutputSafe(true);
                         if (email!=null){
