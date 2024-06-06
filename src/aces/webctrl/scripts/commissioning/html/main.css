@@ -96,8 +96,12 @@ th {
   background-color:darkslategray;
 }
 table {
-  border-collapse:collapse;
+  border-collapse:separate;
+  border-spacing:0;
   margin:0 auto;
+}
+tr {
+  border-collapse:collapse;
 }
 thead {
   border:solid 3px white;

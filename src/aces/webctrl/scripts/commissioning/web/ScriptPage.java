@@ -57,15 +57,17 @@ public class ScriptPage extends ServletBase {
       }
       final Path script = Initializer.getScriptFolder().resolve(fileName);
       Test newTest = null;
-      for (Test te:Test.instances.values()){
-        if (Files.isSameFile(script,te.getScriptFile())){
-          if (te.reserved){
-            Initializer.log(new FileAlreadyExistsException("Cannot overwrite permanent script: "+fileName));
-            res.setStatus(400);
-            return;
+      if (Files.exists(script)){
+        for (Test te:Test.instances.values()){
+          if (Files.isSameFile(script,te.getScriptFile())){
+            if (te.reserved){
+              Initializer.log(new FileAlreadyExistsException("Cannot overwrite permanent script: "+fileName));
+              res.setStatus(400);
+              return;
+            }
+            newTest = te;
+            break;
           }
-          newTest = te;
-          break;
         }
       }
       {
@@ -215,8 +217,10 @@ public class ScriptPage extends ServletBase {
                 String err = "Cannot delete permanent script.";
                 res.sendError(400, err);
                 Initializer.log(new IllegalAccessError(err));
-              }else{
-                t.delete();
+              }else if (!t.delete()){
+                String err = "Script could not be deleted. Please try again in a few moments.";
+                res.sendError(400, err);
+                Initializer.log(new IllegalAccessError(err));
               }
               break;
             }

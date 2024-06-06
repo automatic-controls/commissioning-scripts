@@ -34,6 +34,8 @@ public class ResolvedTestingUnit {
   public volatile int tries = 3;
   /** Specifies how long to wait after failing to read or write a node value. */
   public volatile long failedAttemptTimeout = 300L;
+  /** More error messages will be logged when this is true. */
+  public volatile boolean verbose = false;
   /**
    * Constructs a resolved testing unit based on a few relevant pieces of information.
    * @param tu is the testing unit to resolve.
@@ -120,7 +122,7 @@ public class ResolvedTestingUnit {
    * Sets the value of the given node.
    * @return {@code true} if the node value was set successfully; {@code false} otherwise.
    */
-  public static boolean setValue(final Node n, final Object value, final int tries, final long failedAttemptTimeout) throws InterruptedException {
+  public boolean setValue(final Node n, final Object value, final int tries, final long failedAttemptTimeout) throws InterruptedException {
     if (n==null){
       return false;
     }
@@ -142,6 +144,9 @@ public class ResolvedTestingUnit {
             ret.setResult(true);
           }catch(Throwable t){
             ret.setResult(false);
+            if (verbose){
+              Initializer.log(t);
+            }
           }
         }
       });
@@ -187,6 +192,9 @@ public class ResolvedTestingUnit {
             ret.setResult(val.x);
           }catch(Throwable t){
             ret.setResult(null);
+            if (verbose){
+              Initializer.log(t);
+            }
           }
         }
       });
@@ -232,7 +240,7 @@ public class ResolvedTestingUnit {
   /**
    * @return the value of the node, or {@code null} if the value could not be retrieved.
    */
-  public static String getValue(Node n, final int tries, final long failedAttemptTimeout) throws InterruptedException {
+  public String getValue(Node n, final int tries, final long failedAttemptTimeout) throws InterruptedException {
     if (n==null){
       return null;
     }else if (n instanceof LiteralNode){
@@ -251,6 +259,9 @@ public class ResolvedTestingUnit {
             ret.setResult(n.getValue());
           }catch(Throwable t){
             ret.setResult(null);
+            if (verbose){
+              Initializer.log(t);
+            }
           }
         }
       });
@@ -269,7 +280,7 @@ public class ResolvedTestingUnit {
   /**
    * @return the display value of the node, or {@code null} if the value could not be retrieved.
    */
-  public static String getDisplayValue(Node n, final int tries, final long failedAttemptTimeout) throws InterruptedException {
+  public String getDisplayValue(Node n, final int tries, final long failedAttemptTimeout) throws InterruptedException {
     if (n==null){
       return null;
     }else if (n instanceof LiteralNode){
@@ -288,6 +299,9 @@ public class ResolvedTestingUnit {
             ret.setResult(n.getDisplayValue());
           }catch(Throwable t){
             ret.setResult(null);
+            if (verbose){
+              Initializer.log(t);
+            }
           }
         }
       });
@@ -336,6 +350,9 @@ public class ResolvedTestingUnit {
                   ret.setResult(true);
                 }catch(Throwable t){
                   ret.setResult(false);
+                  if (verbose){
+                    Initializer.log(t);
+                  }
                 }
               }
             });

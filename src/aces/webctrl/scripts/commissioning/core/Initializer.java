@@ -198,7 +198,7 @@ public class Initializer implements ServletContextListener {
         t.kill();
       }
       for (Test t:tests){
-        t.waitForDeath();
+        t.waitForDeath(-1);
       }
       kill = true;
       dataQueryThread.interrupt();

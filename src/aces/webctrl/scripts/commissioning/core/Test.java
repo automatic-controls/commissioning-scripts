@@ -47,14 +47,21 @@ public class Test {
   @Override public int hashCode(){
     return hash;
   }
-  public void delete(){
+  public boolean delete(){
     if (reserved){
-      return;
+      return false;
     }
     try{
-      instances.remove(ID);
       kill();
-      Files.deleteIfExists(scriptFile);
+      if (!waitForDeath(5000L)){
+        return false;
+      }
+      try{
+        Files.deleteIfExists(scriptFile);
+      }catch(Throwable t){
+        return false;
+      }
+      instances.remove(ID);
       final Path scripts = Initializer.getScriptFolder();
       Iterator<ScheduledTest> iter = ScheduledTest.instances.values().iterator();
       ScheduledTest st;
@@ -68,9 +75,11 @@ public class Test {
           Initializer.log(t);
         }
       }
+      return true;
     }catch(Throwable t){
       Initializer.log(t);
     }
+    return false;
   }
   /**
    * @return the output of the test, or {@code null} if there is no output.
@@ -163,10 +172,29 @@ public class Test {
   }
   /**
    * Waits for this test to terminate.
+   * @param timeout in milliseconds specifies the maximum duration to wait for death. -1 means wait forever.
+   * @return whether the test died within the specified timeout
    */
-  public void waitForDeath() throws InterruptedException {
-    while (running.get()){
-      Thread.sleep(500L);
+  public boolean waitForDeath(long timeout) throws InterruptedException {
+    if (!running.get()){
+      return true;
+    }
+    if (timeout==-1){
+      while (running.get()){
+        Thread.sleep(500L);
+      }
+      return true;
+    }else{
+      final long x = System.currentTimeMillis()+timeout;
+      long d;
+      while (running.get()){
+        d = x-System.currentTimeMillis();
+        if (d<=0){
+          break;
+        }
+        Thread.sleep(Math.min(500L,d));
+      }
+      return !running.get();
     }
   }
   /**
